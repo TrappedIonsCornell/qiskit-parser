@@ -1,0 +1,7 @@
+#+title: Qiskit Parser for Rust
+
+Parses a qiskit circuit and provides a bare rust implementation of the circuit. Intended for use with the [[https://github.com/TrappedIonsCornell/Spin-Boson-QEmu][Multimode Spin-Boson Quantum Emulator]], but it should be straightforward to integrate for other rust/python projects.
+
+Creates a rust analog Qiskit circuits
+
+An important assumption of this library is that all inputs are *valid*. The only intended usage for this library is to handle circuits provided by the =data= method from =QuantumCircuit=. i.e. none of the error handling provided by regular qiskit is implemented (nor do we plan for it to be)
