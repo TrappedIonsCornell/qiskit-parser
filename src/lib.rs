@@ -2,6 +2,7 @@ mod circuit_instruction;
 mod instruction;
 mod bit;
 mod register;
+mod parser;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
