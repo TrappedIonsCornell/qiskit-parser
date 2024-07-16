@@ -183,10 +183,15 @@ impl Parser {
         }
     }
 
+    /// Extracts a value from a string between two substrings
     fn extract_value(&self, s: &str, start: &str, end: &str) -> String {
         let start_idx = s.find(start).unwrap() + start.len();
-        let end_idx = s[start_idx..].find(end).unwrap() + start_idx;
-        s[start_idx..end_idx].to_string()
+        if let Some(end_idx) = s[start_idx..].find(end) {
+            let end_idx = end_idx + start_idx;
+            s[start_idx..end_idx].to_string()
+        } else {
+            s[start_idx..].to_string()
+        }
     }
 
     fn extract_optional_value(&self, s: &str, start: &str, end: &str) -> Option<String> {
@@ -208,6 +213,7 @@ impl Parser {
 mod tests {
     use super::*;
 
+    /// Testing an X gate
     #[test]
     fn test_single_qubit_one_gate() {
         let input = "[CircuitInstruction(operation=Instruction(name='x', num_qubits=1, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(1, 'q'), 0),), clbits=())]";
@@ -236,6 +242,7 @@ mod tests {
 
     }
 
+    /// Testing an X and Y gate
     #[test]
     fn test_single_qubit_two_gates() {
         let input = "[CircuitInstruction(operation=Instruction(name='x', num_qubits=1, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(1, 'q'), 0),), clbits=()), CircuitInstruction(operation=Instruction(name='y', num_qubits=1, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(1, 'q'), 0),), clbits=())]";
@@ -280,6 +287,7 @@ mod tests {
         );
     }
 
+    /// Testing a CNOT gate
     #[test]
     fn test_two_qubit_one_gate() {
         let input = "[CircuitInstruction(operation=Instruction(name='cx', num_qubits=2, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(2, 'q'), 0), Qubit(QuantumRegister(2, 'q'), 1)), clbits=())]";
@@ -314,5 +322,122 @@ mod tests {
                 vec![],
             )
         );
+    }
+
+    /// Testing the Bell state circuit
+    #[test]
+    fn test_bell_state() {
+        let input = "[CircuitInstruction(operation=Instruction(name='h', num_qubits=1, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(2, 'q'), 0),), clbits=()), CircuitInstruction(operation=Instruction(name='cx', num_qubits=2, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(2, 'q'), 0), Qubit(QuantumRegister(2, 'q'), 1)), clbits=())]";
+
+        let parser = Parser::new(input.to_string());
+        let instructions = parser.parse(input.to_string());
+
+        assert_eq!(instructions.len(), 2);
+        let mut instr = &instructions[0];
+        assert_eq!(
+            instr,
+            &CircuitInstruction::new(
+                Instruction::new("h".to_string(), 1, 0, vec![], None, None, None),
+                vec![Qubit::new(
+                    Register::QuantumRegister(QuantumRegister::new(
+                        Some(2),
+                        Some("q".to_string()),
+                        None
+                    )),
+                    0,
+                )],
+                vec![],
+            )
+        );
+        instr = &instructions[1];
+        assert_eq!(
+            instr,
+            &CircuitInstruction::new(
+                Instruction::new("cx".to_string(), 2, 0, vec![], None, None, None),
+                vec![
+                    Qubit::new(
+                        Register::QuantumRegister(QuantumRegister::new(
+                            Some(2),
+                            Some("q".to_string()),
+                            None
+                        )),
+                        0,
+                    ),
+                    Qubit::new(
+                        Register::QuantumRegister(QuantumRegister::new(
+                            Some(2),
+                            Some("q".to_string()),
+                            None
+                        )),
+                        1,
+                    )
+                ],
+                vec![],
+            )
+        );
+    }
+
+    /// Testing the classic |0> -> |000> QECC circuit
+    #[test]
+    fn test_naive_qecc() {
+        let input = "[CircuitInstruction(operation=Instruction(name='cx', num_qubits=2, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(3, 'q'), 0), Qubit(QuantumRegister(3, 'q'), 1)), clbits=()), CircuitInstruction(operation=Instruction(name='cx', num_qubits=2, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(3, 'q'), 0), Qubit(QuantumRegister(3, 'q'), 2)), clbits=())]";
+
+        let parser = Parser::new(input.to_string());
+        let instructions = parser.parse(input.to_string());
+
+        assert_eq!(instructions.len(), 2);
+        let mut instr = &instructions[0];
+        assert_eq!(
+            instr,
+            &CircuitInstruction::new(
+                Instruction::new("cx".to_string(), 2, 0, vec![], None, None, None),
+                vec![
+                    Qubit::new(
+                        Register::QuantumRegister(QuantumRegister::new(
+                            Some(3),
+                            Some("q".to_string()),
+                            None
+                        )),
+                        0,
+                    ),
+                    Qubit::new(
+                        Register::QuantumRegister(QuantumRegister::new(
+                            Some(3),
+                            Some("q".to_string()),
+                            None
+                        )),
+                        1,
+                    )
+                ],
+                vec![],
+            )
+        );
+        instr = &instructions[1];
+        assert_eq!(
+            instr,
+            &CircuitInstruction::new(
+                Instruction::new("cx".to_string(), 2, 0, vec![], None, None, None),
+                vec![
+                    Qubit::new(
+                        Register::QuantumRegister(QuantumRegister::new(
+                            Some(3),
+                            Some("q".to_string()),
+                            None
+                        )),
+                        0,
+                    ),
+                    Qubit::new(
+                        Register::QuantumRegister(QuantumRegister::new(
+                            Some(3),
+                            Some("q".to_string()),
+                            None
+                        )),
+                        2,
+                    )
+                ],
+                vec![],
+            )
+        );
+
     }
 }
