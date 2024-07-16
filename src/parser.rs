@@ -119,7 +119,10 @@ impl Parser {
         let register = Box::new(Register::ClassicalRegister(
             self.parse_classical_register(register_str.to_string()),
         ));
-        let index = self.extract_value(&s[register_end..], ", ", ")").parse().unwrap();
+        let index = self
+            .extract_value(&s[register_end..], ", ", ")")
+            .parse()
+            .unwrap();
 
         Clbit::new(*register, index)
     }
@@ -206,72 +209,108 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_single_qubit_x_gate() {
+    fn test_single_qubit_one_gate() {
         let input = "[CircuitInstruction(operation=Instruction(name='x', num_qubits=1, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(1, 'q'), 0),), clbits=())]";
 
-        // Qubit(QuantumRegister(1, 'q'), 0)
+        let parser = Parser::new(input.to_string());
+        let instructions = parser.parse(input.to_string());
+
+        assert_eq!(instructions.len(), 1);
+
+        let mut instr = &instructions[0];
+        assert_eq!(
+            instr,
+            &CircuitInstruction::new(
+                Instruction::new("x".to_string(), 1, 0, vec![], None, None, None),
+                vec![Qubit::new(
+                    Register::QuantumRegister(QuantumRegister::new(
+                        Some(1),
+                        Some("q".to_string()),
+                        None
+                    )),
+                    0,
+                )],
+                vec![],
+            )
+        );
+
+    }
+
+    #[test]
+    fn test_single_qubit_two_gates() {
+        let input = "[CircuitInstruction(operation=Instruction(name='x', num_qubits=1, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(1, 'q'), 0),), clbits=()), CircuitInstruction(operation=Instruction(name='y', num_qubits=1, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(1, 'q'), 0),), clbits=())]";
+
+        let parser = Parser::new(input.to_string());
+        let instructions = parser.parse(input.to_string());
+
+        assert_eq!(instructions.len(), 2);
+
+        let mut instr = &instructions[0];
+        assert_eq!(
+            instr,
+            &CircuitInstruction::new(
+                Instruction::new("x".to_string(), 1, 0, vec![], None, None, None),
+                vec![Qubit::new(
+                    Register::QuantumRegister(QuantumRegister::new(
+                        Some(1),
+                        Some("q".to_string()),
+                        None
+                    )),
+                    0,
+                )],
+                vec![],
+            )
+        );
+
+        instr = &instructions[1];
+        assert_eq!(
+            instr,
+            &CircuitInstruction::new(
+                Instruction::new("y".to_string(), 1, 0, vec![], None, None, None),
+                vec![Qubit::new(
+                    Register::QuantumRegister(QuantumRegister::new(
+                        Some(1),
+                        Some("q".to_string()),
+                        None
+                    )),
+                    0,
+                )],
+                vec![],
+            )
+        );
+    }
+
+    #[test]
+    fn test_two_qubit_one_gate() {
+        let input = "[CircuitInstruction(operation=Instruction(name='cx', num_qubits=2, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(2, 'q'), 0), Qubit(QuantumRegister(2, 'q'), 1)), clbits=())]";
 
         let parser = Parser::new(input.to_string());
         let instructions = parser.parse(input.to_string());
 
         assert_eq!(instructions.len(), 1);
         let instr = &instructions[0];
-        assert_eq!(instr.get_operation().get_name(), "x");
-        assert_eq!(instr.get_operation().get_num_qubits(), 1);
-        assert_eq!(instr.get_operation().get_num_clbits(), 0);
-        assert_eq!(instr.get_operation().get_params().len(), 0);
-        assert_eq!(instr.get_operation().get_duration(), None);
-        // assert_eq!(instr.get_operation().get_unit(), "".to_string());
-        // assert_eq!(instr.get_operation().get_label(), "");
-
-        let qubits = instr.get_qubits();
-        assert_eq!(qubits.len(), 1);
-        let qubit = &qubits[0];
-        assert_eq!(
-            qubit
-                .get_register()
-                .get_quantum_register()
-                .unwrap()
-                .get_size(),
-            Some(1)
-        );
-        assert_eq!(
-            qubit
-                .get_register()
-                .get_quantum_register()
-                .unwrap()
-                .get_name(),
-            Some("q".to_string())
-        );
-        assert_eq!(
-            qubit
-                .get_register()
-                .get_quantum_register()
-                .unwrap()
-                .get_bits(),
-            None
-        );
-        assert_eq!(qubit.get_index(), 0);
-
-        let clbits = instr.get_clbits();
-        assert_eq!(clbits.len(), 0);
-
         assert_eq!(
             instr,
             &CircuitInstruction::new(
-                Instruction::new(
-                    "x".to_string(),
-                    1,
-                    0,
-                    vec![],
-                    None,
-                    None,
-                    None
-                ),
-                vec![Qubit::new(
-                    Register::QuantumRegister(QuantumRegister::new(Some(1), Some("q".to_string()), None)),
-                    0,
-                )],
+                Instruction::new("cx".to_string(), 2, 0, vec![], None, None, None),
+                vec![
+                    Qubit::new(
+                        Register::QuantumRegister(QuantumRegister::new(
+                            Some(2),
+                            Some("q".to_string()),
+                            None
+                        )),
+                        0,
+                    ),
+                    Qubit::new(
+                        Register::QuantumRegister(QuantumRegister::new(
+                            Some(2),
+                            Some("q".to_string()),
+                            None
+                        )),
+                        1,
+                    )
+                ],
                 vec![],
             )
         );
