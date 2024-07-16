@@ -11,7 +11,7 @@ use crate::bit::Qubit;
 use crate::circuit_instruction::CircuitInstruction;
 use crate::instruction::Instruction;
 
-struct Parser {
+pub struct Parser {
     input: String,
 }
 
@@ -46,7 +46,7 @@ impl Parser {
 
             // Parse clbits
             let clbits_start = circuit_instr.find("clbits=(").unwrap() + "clbits=(".len();
-            let clbits_end = circuit_instr.len() - 1;
+            let clbits_end = circuit_instr.len();
             let clbits_str = &circuit_instr[clbits_start..clbits_end];
             let clbits = self.parse_clbits(clbits_str.to_string());
 
@@ -104,9 +104,11 @@ impl Parser {
         let register = Box::new(Register::QuantumRegister(
             self.parse_quantum_register(register_str.to_string()),
         ));
-        let index = self.extract_value(&s, ", ", ")").parse().unwrap();
 
-        Qubit::new(*register, index)
+        let index = self.extract_value(&s[register_end..], ", ", ")");
+        let a = index.parse().unwrap();
+
+        Qubit::new(*register, a)
     }
 
     fn parse_clbit(&self, s: String) -> Clbit {
@@ -117,7 +119,7 @@ impl Parser {
         let register = Box::new(Register::ClassicalRegister(
             self.parse_classical_register(register_str.to_string()),
         ));
-        let index = self.extract_value(&s, ", ", ")").parse().unwrap();
+        let index = self.extract_value(&s[register_end..], ", ", ")").parse().unwrap();
 
         Clbit::new(*register, index)
     }
@@ -205,7 +207,10 @@ mod tests {
 
     #[test]
     fn test_single_qubit_x_gate() {
-        let input = "[CircuitInstruction(operation=Instruction(name='x', num_qubits=1, num_clbits=1, params=[], duration=None, unit='', label=''), qubits=(Qubit(QuantumRegister(size=None, name=None, bits=None), 0)), clbits=(Clbit(ClassicalRegister(size=None, name=None, bits=None), 0))]";
+        let input = "[CircuitInstruction(operation=Instruction(name='x', num_qubits=1, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(1, 'q'), 0),), clbits=())]";
+
+        // Qubit(QuantumRegister(1, 'q'), 0)
+
         let parser = Parser::new(input.to_string());
         let instructions = parser.parse(input.to_string());
 
@@ -213,7 +218,7 @@ mod tests {
         let instr = &instructions[0];
         assert_eq!(instr.get_operation().get_name(), "x");
         assert_eq!(instr.get_operation().get_num_qubits(), 1);
-        assert_eq!(instr.get_operation().get_num_clbits(), 1);
+        assert_eq!(instr.get_operation().get_num_clbits(), 0);
         assert_eq!(instr.get_operation().get_params().len(), 0);
         assert_eq!(instr.get_operation().get_duration(), None);
         // assert_eq!(instr.get_operation().get_unit(), "".to_string());
@@ -228,7 +233,7 @@ mod tests {
                 .get_quantum_register()
                 .unwrap()
                 .get_size(),
-            None
+            Some(1)
         );
         assert_eq!(
             qubit
@@ -236,7 +241,7 @@ mod tests {
                 .get_quantum_register()
                 .unwrap()
                 .get_name(),
-            None
+            Some("q".to_string())
         );
         assert_eq!(
             qubit
@@ -249,33 +254,7 @@ mod tests {
         assert_eq!(qubit.get_index(), 0);
 
         let clbits = instr.get_clbits();
-        assert_eq!(clbits.len(), 1);
-        let clbit = &clbits[0];
-        assert_eq!(
-            clbit
-                .get_register()
-                .get_classical_register()
-                .unwrap()
-                .get_size(),
-            None
-        );
-        assert_eq!(
-            clbit
-                .get_register()
-                .get_classical_register()
-                .unwrap()
-                .get_name(),
-            None
-        );
-        assert_eq!(
-            clbit
-                .get_register()
-                .get_classical_register()
-                .unwrap()
-                .get_bits(),
-            None
-        );
-        assert_eq!(clbit.get_index(), 0);
+        assert_eq!(clbits.len(), 0);
 
         assert_eq!(
             instr,
@@ -283,20 +262,17 @@ mod tests {
                 Instruction::new(
                     "x".to_string(),
                     1,
-                    1,
+                    0,
                     vec![],
                     None,
-                    Some("".to_string()),
-                    Some("".to_string())
+                    None,
+                    None
                 ),
                 vec![Qubit::new(
-                    Register::QuantumRegister(QuantumRegister::new(None, None, None)),
+                    Register::QuantumRegister(QuantumRegister::new(Some(1), Some("q".to_string()), None)),
                     0,
                 )],
-                vec![Clbit::new(
-                    Register::ClassicalRegister(ClassicalRegister::new(None, None, None)),
-                    0,
-                )],
+                vec![],
             )
         );
     }
