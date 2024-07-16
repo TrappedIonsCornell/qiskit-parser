@@ -1,15 +1,13 @@
-use crate::register::ClassicalRegister;
-use crate::register::QuantumRegister;
-use crate::register::Register;
 use crate::register::RegisterOps;
+use crate::register::{AncillaRegister, ClassicalRegister, QuantumRegister, Register};
 
-use crate::bit::Bit;
 use crate::bit::BitOps;
-use crate::bit::Clbit;
-use crate::bit::Qubit;
+use crate::bit::{AncillaQubit, Bit, Clbit, Qubit};
 
 use crate::circuit_instruction::CircuitInstruction;
 use crate::instruction::Instruction;
+
+// TODO: Figure out how to use AncillaQubits. I don't have enough experience using them, and I can't find a good example online
 
 pub struct Parser {
     input: String,
@@ -96,6 +94,17 @@ impl Parser {
         clbits
     }
 
+    fn parse_ancilla_qubits(&self, s: String) -> Vec<AncillaQubit> {
+        let mut ancilla_qubits = Vec::new();
+
+        for ancilla_qubit_str in s.split("AncillaQubit(").skip(1) {
+            let ancilla_qubit_str = ancilla_qubit_str.trim_end_matches(')').trim_end_matches(',');
+            ancilla_qubits.push(self.parse_ancilla_qubit(ancilla_qubit_str.to_string()));
+        }
+
+        ancilla_qubits
+    }
+
     fn parse_qubit(&self, s: String) -> Qubit {
         let register_start = s.find("QuantumRegister(").unwrap() + "QuantumRegister(".len();
         let register_end = s.find("), ").unwrap();
@@ -125,6 +134,22 @@ impl Parser {
             .unwrap();
 
         Clbit::new(*register, index)
+    }
+
+    fn parse_ancilla_qubit(&self, s: String) -> AncillaQubit {
+        let register_start = s.find("AncillaRegister(").unwrap() + "AncillaRegister(".len();
+        let register_end = s.find("), ").unwrap();
+        let register_str = &s[register_start..register_end];
+
+        let register = Box::new(Register::AncillaRegister(
+            self.parse_ancilla_register(register_str.to_string()),
+        ));
+        let index = self
+            .extract_value(&s[register_end..], ", ", ")")
+            .parse()
+            .unwrap();
+
+        AncillaQubit::new(*register, index)
     }
 
     fn parse_quantum_register(&self, s: String) -> QuantumRegister {
@@ -161,6 +186,23 @@ impl Parser {
         ClassicalRegister::new(size, name, bits)
     }
 
+    fn parse_ancilla_register(&self, s: String) -> AncillaRegister {
+        let size = self
+            .extract_optional_value(&s, "", ", ")
+            .and_then(|v| v.parse().ok());
+        let name = self.extract_optional_value(&s, "'", "'");
+        let bits_str = self
+            .extract_optional_value(&s, "bits=", "")
+            .unwrap_or_default();
+        let bits = if bits_str.is_empty() {
+            None
+        } else {
+            Some(self.parse_bit(bits_str))
+        };
+
+        AncillaRegister::new(size, name, bits)
+    }
+
     fn parse_bit(&self, s: String) -> Bit {
         if s.starts_with("Qubit(") {
             Bit::Qubit(
@@ -183,7 +225,6 @@ impl Parser {
         }
     }
 
-    /// Extracts a value from a string between two substrings
     fn extract_value(&self, s: &str, start: &str, end: &str) -> String {
         let start_idx = s.find(start).unwrap() + start.len();
         if let Some(end_idx) = s[start_idx..].find(end) {
@@ -223,7 +264,7 @@ mod tests {
 
         assert_eq!(instructions.len(), 1);
 
-        let mut instr = &instructions[0];
+        let instr = &instructions[0];
         assert_eq!(
             instr,
             &CircuitInstruction::new(
@@ -239,7 +280,6 @@ mod tests {
                 vec![],
             )
         );
-
     }
 
     /// Testing an X and Y gate
@@ -438,6 +478,5 @@ mod tests {
                 vec![],
             )
         );
-
     }
 }

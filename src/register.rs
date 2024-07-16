@@ -4,6 +4,7 @@ use crate::bit::Bit;
 pub enum Register {
     QuantumRegister(QuantumRegister),
     ClassicalRegister(ClassicalRegister),
+    AncillaRegister(AncillaRegister),
 }
 
 impl Register {
@@ -16,6 +17,12 @@ impl Register {
     pub fn get_classical_register(&self) -> Option<ClassicalRegister> {
         match self {
             Register::ClassicalRegister(register) => Some(register.clone()),
+            _ => None,
+        }
+    }
+    pub fn get_ancilla_register(&self) -> Option<AncillaRegister> {
+        match self {
+            Register::AncillaRegister(register) => Some(register.clone()),
             _ => None,
         }
     }
@@ -37,6 +44,13 @@ pub struct QuantumRegister {
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
 pub struct ClassicalRegister {
+    size: Option<u32>,
+    name: Option<String>,
+    bits: Option<Bit>,
+}
+
+#[derive(Debug, PartialEq, Hash, Eq, Clone)]
+pub struct AncillaRegister {
     size: Option<u32>,
     name: Option<String>,
     bits: Option<Bit>,
@@ -67,6 +81,28 @@ impl RegisterOps for QuantumRegister {
 impl RegisterOps for ClassicalRegister {
     fn new(size: Option<u32>, name: Option<String>, bits: Option<Bit>) -> Self {
         ClassicalRegister {
+            size,
+            name,
+            bits,
+        }
+    }
+
+    fn get_size(&self) -> Option<u32> {
+        self.size
+    }
+
+    fn get_name(&self) -> Option<String> {
+        self.name.clone()
+    }
+
+    fn get_bits(&self) -> Option<Bit> {
+        self.bits.clone()
+    }
+}
+
+impl RegisterOps for AncillaRegister {
+    fn new(size: Option<u32>, name: Option<String>, bits: Option<Bit>) -> Self {
+        AncillaRegister {
             size,
             name,
             bits,
