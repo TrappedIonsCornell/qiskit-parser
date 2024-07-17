@@ -6,7 +6,6 @@ use crate::bit::{AncillaQubit, Bit, Clbit, Qubit};
 
 use crate::circuit_instruction::CircuitInstruction;
 use crate::instruction::Instruction;
-use crate::instruction::Operation;
 
 // TODO: Figure out how to use AncillaQubits. I don't have enough experience using them, and I can't find a good example online
 
@@ -19,11 +18,11 @@ impl Parser {
         Parser { input }
     }
 
-    pub fn parse(&self, s: String) -> Vec<CircuitInstruction> {
+    pub fn parse(&self) -> Vec<CircuitInstruction> {
         let mut instructions = Vec::new();
 
         // Remove the surrounding brackets
-        let s = s.trim_start_matches('[').trim_end_matches(']');
+        let s = self.input.trim_start_matches('[').trim_end_matches(']');
 
         // Split by CircuitInstruction
         for circuit_instr in s.split("CircuitInstruction(").skip(1) {
@@ -261,11 +260,12 @@ mod tests {
         let input = "[CircuitInstruction(operation=Instruction(name='x', num_qubits=1, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(1, 'q'), 0),), clbits=())]";
 
         let parser = Parser::new(input.to_string());
-        let instructions = parser.parse(input.to_string());
+        let instructions = parser.parse();
 
         assert_eq!(instructions.len(), 1);
 
         let instr = &instructions[0];
+        println!("{:?}", instr);
         assert_eq!(
             instr,
             &CircuitInstruction::new(
@@ -289,7 +289,7 @@ mod tests {
         let input = "[CircuitInstruction(operation=Instruction(name='x', num_qubits=1, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(1, 'q'), 0),), clbits=()), CircuitInstruction(operation=Instruction(name='y', num_qubits=1, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(1, 'q'), 0),), clbits=())]";
 
         let parser = Parser::new(input.to_string());
-        let instructions = parser.parse(input.to_string());
+        let instructions = parser.parse();
 
         assert_eq!(instructions.len(), 2);
 
@@ -334,7 +334,7 @@ mod tests {
         let input = "[CircuitInstruction(operation=Instruction(name='cx', num_qubits=2, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(2, 'q'), 0), Qubit(QuantumRegister(2, 'q'), 1)), clbits=())]";
 
         let parser = Parser::new(input.to_string());
-        let instructions = parser.parse(input.to_string());
+        let instructions = parser.parse();
 
         assert_eq!(instructions.len(), 1);
         let instr = &instructions[0];
@@ -371,7 +371,7 @@ mod tests {
         let input = "[CircuitInstruction(operation=Instruction(name='h', num_qubits=1, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(2, 'q'), 0),), clbits=()), CircuitInstruction(operation=Instruction(name='cx', num_qubits=2, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(2, 'q'), 0), Qubit(QuantumRegister(2, 'q'), 1)), clbits=())]";
 
         let parser = Parser::new(input.to_string());
-        let instructions = parser.parse(input.to_string());
+        let instructions = parser.parse();
 
         assert_eq!(instructions.len(), 2);
         let mut instr = &instructions[0];
@@ -424,7 +424,7 @@ mod tests {
         let input = "[CircuitInstruction(operation=Instruction(name='cx', num_qubits=2, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(3, 'q'), 0), Qubit(QuantumRegister(3, 'q'), 1)), clbits=()), CircuitInstruction(operation=Instruction(name='cx', num_qubits=2, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(3, 'q'), 0), Qubit(QuantumRegister(3, 'q'), 2)), clbits=())]";
 
         let parser = Parser::new(input.to_string());
-        let instructions = parser.parse(input.to_string());
+        let instructions = parser.parse();
 
         assert_eq!(instructions.len(), 2);
         let mut instr = &instructions[0];

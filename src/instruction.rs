@@ -98,7 +98,7 @@ impl Operation for Instruction {
 impl InstructionType {
     pub fn from(instruction: Instruction) -> InstructionType {
         // convert from the instruction name to the enum variant
-        let allowed_gates: Vec<&str> = vec!["x", "y", "z", "h"];
+        let allowed_gates: Vec<&str> = vec!["x", "y", "z", "h", "cx"];
 
         let name = instruction.name.as_str();
         match name {
