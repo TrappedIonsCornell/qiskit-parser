@@ -9,6 +9,7 @@ use crate::instruction::Instruction;
 
 // TODO: Figure out how to use AncillaQubits. I don't have enough experience using them, and I can't find a good example online
 
+/// A parser for the Qiskit circuit instructions
 pub struct Parser {
     input: String,
 }
@@ -18,6 +19,8 @@ impl Parser {
         Parser { input }
     }
 
+    /// Parses the input string (a string representation of a Qiskit
+    /// QuantumCircuit's data field) into a vector of CircuitInstructions
     pub fn parse(&self) -> Vec<CircuitInstruction> {
         let mut instructions = Vec::new();
 

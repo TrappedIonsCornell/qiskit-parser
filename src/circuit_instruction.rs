@@ -1,6 +1,8 @@
 use crate::instruction::{Instruction, InstructionType};
 use crate::bit::{Qubit, Clbit};
 
+/// Description of a Qiskit Circuit element. Provides a specific operation and the
+/// qubits/classical bits it interacts with.
 #[derive(Debug, PartialEq, Clone)]
 pub struct CircuitInstruction {
     operation: InstructionType,

@@ -5,6 +5,7 @@ use crate::instruction::{Gate, Instruction, Operation};
 use operation_macro::Operation;
 
 #[derive(Debug, PartialEq, Clone, Operation)]
+/// A Pauli-X gate
 pub struct XGate {
     instruction: Instruction,
 }
@@ -33,6 +34,7 @@ impl Gate for XGate {
 }
 
 #[derive(Debug, PartialEq, Clone, Operation)]
+/// A Pauli-Y gate
 struct YGate {
     instruction: Instruction,
 }
@@ -61,6 +63,7 @@ impl Gate for YGate {
 }
 
 #[derive(Debug, PartialEq, Clone, Operation)]
+/// A Pauli-Z gate
 struct ZGate {
     instruction: Instruction,
 }
@@ -89,6 +92,7 @@ impl Gate for ZGate {
 }
 
 #[derive(Debug, PartialEq, Clone, Operation)]
+/// A Hadamard gate
 pub struct HadamardGate {
     instruction: Instruction,
 }

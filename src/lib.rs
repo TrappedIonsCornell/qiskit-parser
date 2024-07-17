@@ -1,6 +1,6 @@
-mod circuit_instruction;
-mod instruction;
-mod bit;
-mod register;
-mod parser;
-mod gates;
+pub mod circuit_instruction;
+pub mod instruction;
+pub mod bit;
+pub mod register;
+pub mod parser;
+pub mod gates;

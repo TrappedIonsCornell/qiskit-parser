@@ -4,6 +4,7 @@ use crate::register::AncillaRegister;
 use crate::register::Register;
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
+/// A generic bit
 pub enum Bit {
     Qubit(Qubit),
     Clbit(Clbit),
@@ -17,18 +18,22 @@ pub trait BitOps {
 }
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
+/// A classical bit
 pub struct Clbit {
     register: Box<ClassicalRegister>,
     index: usize,
 }
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
+/// A quantum bit
 pub struct Qubit {
     register: Box<QuantumRegister>,
     index: usize,
 }
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
+/// An ancilla quantum bit (i.e. a quantum bit that is not part of the main
+/// register)
 pub struct AncillaQubit {
     register: Box<AncillaRegister>,
     index: usize,

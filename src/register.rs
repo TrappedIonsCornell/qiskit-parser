@@ -1,6 +1,7 @@
 use crate::bit::Bit;
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
+/// Register for the system
 pub enum Register {
     QuantumRegister(QuantumRegister),
     ClassicalRegister(ClassicalRegister),
@@ -28,6 +29,7 @@ impl Register {
     }
 }
 
+/// Register Operations
 pub trait RegisterOps {
     fn new(size: Option<u32>, name: Option<String>, bits: Option<Bit>) -> Self;
     fn get_size(&self) -> Option<u32>;
@@ -36,6 +38,7 @@ pub trait RegisterOps {
 }
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
+/// Quantum Register for the system
 pub struct QuantumRegister {
     size: Option<u32>,
     name: Option<String>,
@@ -43,6 +46,7 @@ pub struct QuantumRegister {
 }
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
+/// Classical Register for the system
 pub struct ClassicalRegister {
     size: Option<u32>,
     name: Option<String>,
@@ -50,6 +54,7 @@ pub struct ClassicalRegister {
 }
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
+/// Ancilla Register for the system
 pub struct AncillaRegister {
     size: Option<u32>,
     name: Option<String>,

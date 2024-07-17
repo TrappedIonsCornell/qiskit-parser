@@ -5,6 +5,7 @@ use quote::quote;
 use syn::{parse_macro_input, DeriveInput};
 
 #[proc_macro_derive(Operation)]
+/// Derive macro generating an impl of the trait `Operation`
 pub fn derive_operation(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
