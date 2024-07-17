@@ -1,9 +1,9 @@
-use crate::instruction::Instruction;
+use crate::instruction::{Instruction, InstructionType};
 use crate::bit::{Qubit, Clbit};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct CircuitInstruction {
-    operation: Instruction,
+    operation: InstructionType,
     qubits: Vec<Qubit>,
     clbits: Vec<Clbit>,
 }
@@ -11,13 +11,13 @@ pub struct CircuitInstruction {
 impl CircuitInstruction {
     pub fn new(operation: Instruction, qubits: Vec<Qubit>, clbits: Vec<Clbit>) -> Self {
         CircuitInstruction {
-            operation,
+            operation: InstructionType::from(operation),
             qubits,
             clbits,
         }
     }
 
-    pub fn get_operation(&self) -> &Instruction {
+    pub fn get_operation(&self) -> &InstructionType {
         &self.operation
     }
 

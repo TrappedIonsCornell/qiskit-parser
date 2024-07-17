@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::fmt::Debug;
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Instruction {
     name: String,
@@ -9,8 +12,39 @@ pub struct Instruction {
     label: Option<String>,
 }
 
-pub trait Operation {
-    fn new(
+pub trait Operation: Debug + PartialEq + Clone {
+    fn name(&self) -> &str;
+    fn num_qubits(&self) -> usize;
+    fn num_clbits(&self) -> usize;
+    fn params(&self) -> &[f64];
+    fn duration(&self) -> Option<f64>;
+    fn unit(&self) -> Option<&str>;
+    fn label(&self) -> Option<&str>;
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum InstructionType {
+    Gate(Instruction),
+    Measurement(Instruction),
+    Reset(Instruction),
+    Barrier(Instruction),
+    Delay(Instruction),
+}
+
+pub trait Gate: Operation {
+    fn to_matrix(&self) -> Vec<Vec<f64>>; // Example of a method specific to gates
+}
+
+pub trait Measurement: Operation {}
+
+pub trait Reset: Operation {}
+
+pub trait Barrier: Operation {}
+
+pub trait Delay: Operation {}
+
+impl Instruction {
+    pub fn new(
         name: String,
         num_qubits: usize,
         num_clbits: usize,
@@ -18,10 +52,7 @@ pub trait Operation {
         duration: Option<f64>,
         unit: Option<String>,
         label: Option<String>,
-    ) -> Instruction
-    where
-        Instruction : Sized,
-    {
+    ) -> Instruction {
         Instruction {
             name,
             num_qubits,
@@ -32,13 +63,6 @@ pub trait Operation {
             label,
         }
     }
-    fn name(&self) -> &str;
-    fn num_qubits(&self) -> usize;
-    fn num_clbits(&self) -> usize;
-    fn params(&self) -> &[f64];
-    fn duration(&self) -> Option<f64>;
-    fn unit(&self) -> Option<&str>;
-    fn label(&self) -> Option<&str>;
 }
 
 impl Operation for Instruction {
@@ -71,14 +95,21 @@ impl Operation for Instruction {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub enum InstructionType {
-    Gate(Instruction),
-    Measurement(Instruction),
-    Reset(Instruction),
-    Barrier(Instruction),
-    Delay(Instruction),
-    Custom(Instruction), // For any other custom instruction types
+impl InstructionType {
+    pub fn from(instruction: Instruction) -> InstructionType {
+        // convert from the instruction name to the enum variant
+        let allowed_gates: Vec<&str> = vec!["x", "y", "z", "h"];
+
+        let name = instruction.name.as_str();
+        match name {
+            name if allowed_gates.contains(&name) => InstructionType::Gate(instruction),
+            "measure" => InstructionType::Measurement(instruction),
+            "reset" => InstructionType::Reset(instruction),
+            "barrier" => InstructionType::Barrier(instruction),
+            "delay" => InstructionType::Delay(instruction),
+            _ => unimplemented!(),
+        }
+    }
 }
 
 impl Operation for InstructionType {
@@ -89,7 +120,6 @@ impl Operation for InstructionType {
             InstructionType::Reset(inst) => inst.name(),
             InstructionType::Barrier(inst) => inst.name(),
             InstructionType::Delay(inst) => inst.name(),
-            InstructionType::Custom(inst) => inst.name(),
         }
     }
 
@@ -100,7 +130,6 @@ impl Operation for InstructionType {
             InstructionType::Reset(inst) => inst.num_qubits(),
             InstructionType::Barrier(inst) => inst.num_qubits(),
             InstructionType::Delay(inst) => inst.num_qubits(),
-            InstructionType::Custom(inst) => inst.num_qubits(),
         }
     }
 
@@ -111,7 +140,6 @@ impl Operation for InstructionType {
             InstructionType::Reset(inst) => inst.num_clbits(),
             InstructionType::Barrier(inst) => inst.num_clbits(),
             InstructionType::Delay(inst) => inst.num_clbits(),
-            InstructionType::Custom(inst) => inst.num_clbits(),
         }
     }
 
@@ -122,7 +150,6 @@ impl Operation for InstructionType {
             InstructionType::Reset(inst) => inst.params(),
             InstructionType::Barrier(inst) => inst.params(),
             InstructionType::Delay(inst) => inst.params(),
-            InstructionType::Custom(inst) => inst.params(),
         }
     }
 
@@ -133,7 +160,6 @@ impl Operation for InstructionType {
             InstructionType::Reset(inst) => inst.duration(),
             InstructionType::Barrier(inst) => inst.duration(),
             InstructionType::Delay(inst) => inst.duration(),
-            InstructionType::Custom(inst) => inst.duration(),
         }
     }
 
@@ -144,7 +170,6 @@ impl Operation for InstructionType {
             InstructionType::Reset(inst) => inst.unit(),
             InstructionType::Barrier(inst) => inst.unit(),
             InstructionType::Delay(inst) => inst.unit(),
-            InstructionType::Custom(inst) => inst.unit(),
         }
     }
 
@@ -155,7 +180,6 @@ impl Operation for InstructionType {
             InstructionType::Reset(inst) => inst.label(),
             InstructionType::Barrier(inst) => inst.label(),
             InstructionType::Delay(inst) => inst.label(),
-            InstructionType::Custom(inst) => inst.label(),
         }
     }
 }

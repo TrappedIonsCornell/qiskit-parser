@@ -3,3 +3,4 @@ mod instruction;
 mod bit;
 mod register;
 mod parser;
+mod gates;
