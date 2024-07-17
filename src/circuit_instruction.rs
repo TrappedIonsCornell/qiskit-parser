@@ -1,8 +1,7 @@
 use crate::instruction::Instruction;
-use crate::bit::Qubit;
-use crate::bit::Clbit;
+use crate::bit::{Qubit, Clbit};
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct CircuitInstruction {
     operation: Instruction,
     qubits: Vec<Qubit>,

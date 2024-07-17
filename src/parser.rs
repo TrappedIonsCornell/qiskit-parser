@@ -6,6 +6,7 @@ use crate::bit::{AncillaQubit, Bit, Clbit, Qubit};
 
 use crate::circuit_instruction::CircuitInstruction;
 use crate::instruction::Instruction;
+use crate::instruction::Operation;
 
 // TODO: Figure out how to use AncillaQubits. I don't have enough experience using them, and I can't find a good example online
 
