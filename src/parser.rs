@@ -15,7 +15,7 @@ pub struct Parser {
 }
 
 impl Parser {
-    fn new(input: String) -> Parser {
+    pub fn new(input: String) -> Parser {
         Parser { input }
     }
 
