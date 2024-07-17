@@ -265,7 +265,6 @@ mod tests {
         assert_eq!(instructions.len(), 1);
 
         let instr = &instructions[0];
-        println!("{:?}", instr);
         assert_eq!(
             instr,
             &CircuitInstruction::new(

@@ -4,5 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+operation_macro = { path = "operation_macro" }
 ndarray = "0.15.6"
 # ndarray-linalg = "0.16.0"
+numpy = "0.21"

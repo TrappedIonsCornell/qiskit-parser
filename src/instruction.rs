@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use ndarray::Array2;
+use numpy::Complex64;
 use std::fmt::Debug;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -32,7 +33,7 @@ pub enum InstructionType {
 }
 
 pub trait Gate: Operation {
-    fn to_matrix(&self) -> Vec<Vec<f64>>; // Example of a method specific to gates
+    fn to_matrix(&self) -> Array2<Complex64>; // Example of a method specific to gates
 }
 
 pub trait Measurement: Operation {}
