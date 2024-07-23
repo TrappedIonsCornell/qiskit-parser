@@ -1,32 +1,34 @@
-use crate::bit::{Qubit, Clbit};
+use std::any::Any;
+
+use crate::{bit::{Clbit, Qubit}, instruction::Operation, util::pool::Handle};
 
 /// Description of a Qiskit Circuit element. Provides a specific operation and the
 /// qubits/classical bits it interacts with.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Clone)]
 pub struct CircuitInstruction {
-    operation: InstructionType,
-    qubits: Vec<i32>,
-    clbits: Vec<i32>,
+    operation: Handle<Box<dyn Operation>>,
+    qubits: Vec<usize>,
+    clbits: Vec<usize>,
 }
 
 impl CircuitInstruction {
-    pub fn new(operation: Instruction, qubits: Vec<i32>, clbits: Vec<i32>) -> Self {
+    pub fn new(operation: Handle<Box<dyn Operation>>, qubits: Vec<usize>, clbits: Vec<usize>) -> Self {
         CircuitInstruction {
-            operation: InstructionType::from(operation),
+            operation,
             qubits,
             clbits,
         }
     }
 
-    pub fn get_operation(&self) -> &InstructionType {
+    pub fn get_operation(&self) -> &Handle<Box<dyn Operation>> {
         &self.operation
     }
 
-    pub fn get_qubits(&self) -> &Vec<Qubit> {
+    pub fn get_qubits(&self) -> &Vec<usize> {
         &self.qubits
     }
 
-    pub fn get_clbits(&self) -> &Vec<Clbit> {
+    pub fn get_clbits(&self) -> &Vec<usize> {
         &self.clbits
     }
 }

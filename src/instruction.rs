@@ -65,10 +65,10 @@ impl OperationPool {
         })
     }
 
-    pub fn add(&mut self, item: Box<dyn Operation>) -> Handle<Box<dyn Operation>> {
+    pub fn add(&mut self, item: &dyn Operation) -> Handle<Box<dyn Operation>> {
         unsafe {
             let next_item = self.arena.alloc();
-            *(next_item as *mut ManuallyDrop<Box<dyn Operation>>) = ManuallyDrop::new(item);
+            *(next_item as *mut ManuallyDrop<Box<dyn Operation>>) = ManuallyDrop::new(Box::new(item));
             Handle::from(next_item)
         }
     }
