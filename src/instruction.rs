@@ -1,105 +1,36 @@
 use ndarray::Array2;
+
 use numpy::Complex64;
 use std::fmt::Debug;
 
-/// An instruction is defined by a name, the number of qubits/classical bits it
-/// acts on, and other optional parameters.
-///
-/// Instructions act as the most general operation in a a quantum circuit, and
-/// are converted into an InstructionType enum for further processing.
-#[derive(Debug, PartialEq, Clone)]
+use std::{io, mem::ManuallyDrop};
+
+use crate::util::pool::{Handle, MMapArena, ARENA_SIZE_BYTES};
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum Unit {
+    DT,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Instruction {
-    name: String,
-    num_qubits: usize,
-    num_clbits: usize,
-    params: Vec<f64>, // this can be replaced with a more complex type
+    params: Vec<f64>,
     duration: Option<f64>,
-    unit: Option<String>,
-    label: Option<String>,
+    unit: Unit,
 }
-
-/// Operations are the most general trait for quantum operations. They provide
-/// basic methods to retrieve information from an instruction.
-pub trait Operation: Debug + PartialEq + Clone {
-    fn name(&self) -> &str;
-    fn num_qubits(&self) -> usize;
-    fn num_clbits(&self) -> usize;
-    fn params(&self) -> &[f64];
-    fn duration(&self) -> Option<f64>;
-    fn unit(&self) -> Option<&str>;
-    fn label(&self) -> Option<&str>;
-}
-
-/// Contains the different types of instructions that can be used in a quantum
-/// circuit.
-#[derive(Debug, PartialEq, Clone)]
-pub enum InstructionType {
-    Gate(Instruction),
-    Measurement(Instruction),
-    Reset(Instruction),
-    Barrier(Instruction),
-    Delay(Instruction),
-    Store(Instruction),
-}
-
-/// Gates are unitary operations that act on qubits. They can be converted into
-/// a matrix representation.
-pub trait Gate : Operation {
-    fn to_matrix(&self) -> Array2<Complex64>;
-}
-
-/// Measurements are operations that measure the state of a qubit and transform
-/// them into classical bits.
-pub trait Measurement: Operation {}
-
-/// Resets irreversibly set a qubit to the |0> state.
-pub trait Reset: Operation {}
-
-/// Barriers are operations that separate different parts of a quantum circuit.
-pub trait Barrier: Operation {}
-
-/// Delays are operations that represent a time delay in a quantum circuit.
-pub trait Delay: Operation {}
-
-/// Stores write a real-time classical expression to a storage location.
-pub trait Store : Operation {}
 
 impl Instruction {
-    pub fn new(
-        name: String,
-        num_qubits: usize,
-        num_clbits: usize,
-        params: Vec<f64>,
-        duration: Option<f64>,
-        unit: Option<String>,
-        label: Option<String>,
-    ) -> Instruction {
+    pub fn new(params: Vec<f64>, duration: Option<f64>, unit: Unit) -> Self {
         Instruction {
-            name,
-            num_qubits,
-            num_clbits,
             params,
             duration,
             unit,
-            label,
         }
     }
 }
 
 impl Operation for Instruction {
-    fn name(&self) -> &str {
-        &self.name
-    }
-
-    fn num_qubits(&self) -> usize {
-        self.num_qubits
-    }
-
-    fn num_clbits(&self) -> usize {
-        self.num_clbits
-    }
-
-    fn params(&self) -> &[f64] {
+    fn params(&self) -> &Vec<f64> {
         &self.params
     }
 
@@ -107,108 +38,60 @@ impl Operation for Instruction {
         self.duration
     }
 
-    fn unit(&self) -> Option<&str> {
-        self.unit.as_deref()
-    }
-
-    fn label(&self) -> Option<&str> {
-        self.label.as_deref()
+    fn unit(&self) -> Unit {
+        self.unit
     }
 }
 
-impl InstructionType {
-    pub fn from(instruction: Instruction) -> InstructionType {
-        // convert from the instruction name to the enum variant
-        let allowed_gates: Vec<&str> = vec!["x", "y", "z", "h", "cx"];
 
-        let name = instruction.name.as_str();
-        match name {
-            name if allowed_gates.contains(&name) => InstructionType::Gate(instruction),
-            "measure" => InstructionType::Measurement(instruction),
-            "reset" => InstructionType::Reset(instruction),
-            "barrier" => InstructionType::Barrier(instruction),
-            "delay" => InstructionType::Delay(instruction),
-            "store" => InstructionType::Store(instruction),
-            _ => unimplemented!(),
+pub trait Operation {
+    fn params(&self) -> &Vec<f64>;
+    fn duration(&self) -> Option<f64>;
+    fn unit(&self) -> Unit;
+}
+
+pub trait Gate {
+    fn to_matrix(&self) -> Array2<Complex64>;
+}
+
+pub struct OperationPool {
+    arena: MMapArena<Box<dyn Operation>>,
+}
+
+impl OperationPool {
+    pub fn new(size: usize) -> io::Result<Self> {
+        Ok(Self {
+            arena: MMapArena::new(size)?,
+        })
+    }
+
+    pub fn add(&mut self, item: Box<dyn Operation>) -> Handle<Box<dyn Operation>> {
+        unsafe {
+            let next_item = self.arena.alloc();
+            *(next_item as *mut ManuallyDrop<Box<dyn Operation>>) = ManuallyDrop::new(item);
+            Handle::from(next_item)
         }
+    }
+
+    pub fn get(&self, handle: Handle<Box<dyn Operation>>) -> &dyn Operation {
+        unsafe { &**handle.pointer() }
     }
 }
 
-impl Operation for InstructionType {
-    fn name(&self) -> &str {
-        match self {
-            InstructionType::Gate(inst) => inst.name(),
-            InstructionType::Measurement(inst) => inst.name(),
-            InstructionType::Reset(inst) => inst.name(),
-            InstructionType::Barrier(inst) => inst.name(),
-            InstructionType::Delay(inst) => inst.name(),
-            InstructionType::Store(inst) => inst.name(),
-        }
-    }
+fn main() -> io::Result<()> {
+    let mut pool = OperationPool::new(ARENA_SIZE_BYTES)?;
 
-    fn num_qubits(&self) -> usize {
-        match self {
-            InstructionType::Gate(inst) => inst.num_qubits(),
-            InstructionType::Measurement(inst) => inst.num_qubits(),
-            InstructionType::Reset(inst) => inst.num_qubits(),
-            InstructionType::Barrier(inst) => inst.num_qubits(),
-            InstructionType::Delay(inst) => inst.num_qubits(),
-            InstructionType::Store(inst) => inst.num_qubits(),
-        }
-    }
+    // let a = StructA { data: 42 };
+    // let b = StructB { data: 84 };
 
-    fn num_clbits(&self) -> usize {
-        match self {
-            InstructionType::Gate(inst) => inst.num_clbits(),
-            InstructionType::Measurement(inst) => inst.num_clbits(),
-            InstructionType::Reset(inst) => inst.num_clbits(),
-            InstructionType::Barrier(inst) => inst.num_clbits(),
-            InstructionType::Delay(inst) => inst.num_clbits(),
-            InstructionType::Store(inst) => inst.num_clbits(),
-        }
-    }
+    // let handle_a = pool.add(Box::new(a));
+    // let handle_b = pool.add(Box::new(b));
 
-    fn params(&self) -> &[f64] {
-        match self {
-            InstructionType::Gate(inst) => inst.params(),
-            InstructionType::Measurement(inst) => inst.params(),
-            InstructionType::Reset(inst) => inst.params(),
-            InstructionType::Barrier(inst) => inst.params(),
-            InstructionType::Delay(inst) => inst.params(),
-            InstructionType::Store(inst) => inst.params(),
-        }
-    }
+    // let item_a = pool.get(handle_a);
+    // let item_b = pool.get(handle_b);
 
-    fn duration(&self) -> Option<f64> {
-        match self {
-            InstructionType::Gate(inst) => inst.duration(),
-            InstructionType::Measurement(inst) => inst.duration(),
-            InstructionType::Reset(inst) => inst.duration(),
-            InstructionType::Barrier(inst) => inst.duration(),
-            InstructionType::Delay(inst) => inst.duration(),
-            InstructionType::Store(inst) => inst.duration(),
-        }
-    }
+    // item_a.do_something();
+    // item_b.do_something();
 
-    fn unit(&self) -> Option<&str> {
-        match self {
-            InstructionType::Gate(inst) => inst.unit(),
-            InstructionType::Measurement(inst) => inst.unit(),
-            InstructionType::Reset(inst) => inst.unit(),
-            InstructionType::Barrier(inst) => inst.unit(),
-            InstructionType::Delay(inst) => inst.unit(),
-            InstructionType::Store(inst) => inst.unit(),
-        }
-    }
-
-    fn label(&self) -> Option<&str> {
-        match self {
-            InstructionType::Gate(inst) => inst.label(),
-            InstructionType::Measurement(inst) => inst.label(),
-            InstructionType::Reset(inst) => inst.label(),
-            InstructionType::Barrier(inst) => inst.label(),
-            InstructionType::Delay(inst) => inst.label(),
-            InstructionType::Store(inst) => inst.label(),
-        }
-    }
+    Ok(())
 }

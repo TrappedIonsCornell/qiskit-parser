@@ -5,7 +5,7 @@ use crate::bit::BitOps;
 use crate::bit::{AncillaQubit, Bit, Clbit, Qubit};
 
 use crate::circuit_instruction::CircuitInstruction;
-use crate::instruction::Instruction;
+use crate::instruction::{Instruction};
 
 // TODO: Figure out how to use AncillaQubits. I don't have enough experience using them, and I can't find a good example online
 
@@ -72,7 +72,15 @@ impl Parser {
         let unit = self.extract_optional_value(&s, "unit='", "'");
         let label = self.extract_optional_value(&s, "label='", "'");
 
-        Instruction::new(name, num_qubits, num_clbits, params, duration, unit, label)
+        let id = InstructionData::new(name, num_qubits, num_clbits, params, duration, unit, label);
+
+        match name.as_str() {
+            "measure" => Instruction::Measurement(Measurement{}, id),
+            _ => Instruction::Gate((), id),
+        }
+
+
+
     }
 
     fn parse_qubits(&self, s: String) -> Vec<Qubit> {

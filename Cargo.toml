@@ -8,3 +8,5 @@ operation_macro = { path = "operation_macro" }
 ndarray = "0.15.6"
 # ndarray-linalg = "0.16.0"
 numpy = "0.21"
+pyo3 = "0.21.0"
+memmap2 = "0.9.4"

@@ -1,4 +1,3 @@
-use crate::instruction::{Instruction, InstructionType};
 use crate::bit::{Qubit, Clbit};
 
 /// Description of a Qiskit Circuit element. Provides a specific operation and the
@@ -6,12 +5,12 @@ use crate::bit::{Qubit, Clbit};
 #[derive(Debug, PartialEq, Clone)]
 pub struct CircuitInstruction {
     operation: InstructionType,
-    qubits: Vec<Qubit>,
-    clbits: Vec<Clbit>,
+    qubits: Vec<i32>,
+    clbits: Vec<i32>,
 }
 
 impl CircuitInstruction {
-    pub fn new(operation: Instruction, qubits: Vec<Qubit>, clbits: Vec<Clbit>) -> Self {
+    pub fn new(operation: Instruction, qubits: Vec<i32>, clbits: Vec<i32>) -> Self {
         CircuitInstruction {
             operation: InstructionType::from(operation),
             qubits,

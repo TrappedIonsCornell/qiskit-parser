@@ -12,19 +12,7 @@ pub fn derive_operation(input: TokenStream) -> TokenStream {
     let name = &input.ident;
     let gen = quote! {
         impl Operation for #name {
-            fn name(&self) -> &str {
-                self.instruction.name()
-            }
-
-            fn num_qubits(&self) -> usize {
-                self.instruction.num_qubits()
-            }
-
-            fn num_clbits(&self) -> usize {
-                self.instruction.num_clbits()
-            }
-
-            fn params(&self) -> &[f64] {
+            fn params(&self) -> &Vec<f64> {
                 self.instruction.params()
             }
 
@@ -32,13 +20,10 @@ pub fn derive_operation(input: TokenStream) -> TokenStream {
                 self.instruction.duration()
             }
 
-            fn unit(&self) -> Option<&str> {
+            fn unit(&self) -> Unit {
                 self.instruction.unit()
             }
 
-            fn label(&self) -> Option<&str> {
-                self.instruction.label()
-            }
         }
     };
     gen.into()

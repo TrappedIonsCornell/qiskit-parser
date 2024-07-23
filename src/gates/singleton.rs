@@ -1,10 +1,10 @@
 use ndarray::Array2;
 use numpy::Complex64;
 
-use crate::instruction::{Gate, Instruction, Operation};
+use crate::instruction::{Gate, Instruction, Operation, Unit};
 use operation_macro::Operation;
 
-#[derive(Debug, PartialEq, Clone, Operation)]
+#[derive(Debug, PartialEq, Operation)]
 /// A Pauli-X gate
 pub struct XGate {
     instruction: Instruction,
@@ -13,7 +13,7 @@ pub struct XGate {
 impl XGate {
     pub fn new() -> Self {
         XGate {
-            instruction: Instruction::new(String::from("x"), 1, 0, vec![], None, None, None),
+            instruction: Instruction::new(vec![], None, Unit::DT),
         }
     }
 }
@@ -42,7 +42,7 @@ struct YGate {
 impl YGate {
     pub fn new() -> Self {
         YGate {
-            instruction: Instruction::new(String::from("y"), 1, 0, vec![], None, None, None),
+            instruction: Instruction::new(vec![], None, Unit::DT),
         }
     }
 }
@@ -71,7 +71,7 @@ struct ZGate {
 impl ZGate {
     pub fn new() -> Self {
         ZGate {
-            instruction: Instruction::new(String::from("z"), 1, 0, vec![], None, None, None),
+            instruction: Instruction::new(vec![], None, Unit::DT),
         }
     }
 }
@@ -100,7 +100,7 @@ pub struct HadamardGate {
 impl HadamardGate {
     pub fn new() -> Self {
         HadamardGate {
-            instruction: Instruction::new(String::from("h"), 1, 0, vec![], None, None, None),
+            instruction: Instruction::new(vec![], None, Unit::DT),
         }
     }
 }
