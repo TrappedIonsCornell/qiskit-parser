@@ -8,29 +8,8 @@ pub enum Register {
     AncillaRegister(AncillaRegister),
 }
 
-impl Register {
-    pub fn get_quantum_register(&self) -> Option<QuantumRegister> {
-        match self {
-            Register::QuantumRegister(register) => Some(register.clone()),
-            _ => None,
-        }
-    }
-    pub fn get_classical_register(&self) -> Option<ClassicalRegister> {
-        match self {
-            Register::ClassicalRegister(register) => Some(register.clone()),
-            _ => None,
-        }
-    }
-    pub fn get_ancilla_register(&self) -> Option<AncillaRegister> {
-        match self {
-            Register::AncillaRegister(register) => Some(register.clone()),
-            _ => None,
-        }
-    }
-}
-
 /// Register Operations
-pub trait RegisterOps {
+pub trait RegisterOps : From<Register> {
     fn new(size: Option<u32>, name: Option<String>, bits: Option<Bit>) -> Self;
     fn get_size(&self) -> Option<u32>;
     fn get_name(&self) -> Option<String>;
@@ -61,6 +40,15 @@ pub struct AncillaRegister {
     bits: Option<Bit>,
 }
 
+impl From<Register> for QuantumRegister {
+    fn from(register: Register) -> Self {
+        match register {
+            Register::QuantumRegister(quantum_register) => quantum_register,
+            _ => panic!("Cannot convert to QuantumRegister"),
+        }
+    }
+}
+
 impl RegisterOps for QuantumRegister {
     fn new(size: Option<u32>, name: Option<String>, bits: Option<Bit>) -> Self {
         QuantumRegister {
@@ -83,6 +71,15 @@ impl RegisterOps for QuantumRegister {
     }
 }
 
+impl From<Register> for ClassicalRegister {
+    fn from(register: Register) -> Self {
+        match register {
+            Register::ClassicalRegister(classical_register) => classical_register,
+            _ => panic!("Cannot convert to ClassicalRegister"),
+        }
+    }
+}
+
 impl RegisterOps for ClassicalRegister {
     fn new(size: Option<u32>, name: Option<String>, bits: Option<Bit>) -> Self {
         ClassicalRegister {
@@ -102,6 +99,15 @@ impl RegisterOps for ClassicalRegister {
 
     fn get_bits(&self) -> Option<Bit> {
         self.bits.clone()
+    }
+}
+
+impl From<Register> for AncillaRegister {
+    fn from(register: Register) -> Self {
+        match register {
+            Register::AncillaRegister(ancilla_register) => ancilla_register,
+            _ => panic!("Cannot convert to AncillaRegister"),
+        }
     }
 }
 
