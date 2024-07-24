@@ -8,10 +8,10 @@ pub enum Bit {
     AncillaQubit(AncillaQubit),
 }
 
-pub trait BitOps {
+pub trait BitOps : From<Bit> {
     fn new(register: Register, index: usize) -> Self;
-    fn get_register(&self) -> Register;
-    fn get_index(&self) -> usize;
+    fn register(&self) -> Register;
+    fn index(&self) -> usize;
 }
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
@@ -71,11 +71,11 @@ impl BitOps for Qubit {
         }
     }
 
-    fn get_register(&self) -> Register {
+    fn register(&self) -> Register {
         Register::QuantumRegister(*self.register.clone())
     }
 
-    fn get_index(&self) -> usize {
+    fn index(&self) -> usize {
         self.index
     }
 }
@@ -88,11 +88,11 @@ impl BitOps for Clbit {
         }
     }
 
-    fn get_register(&self) -> Register {
+    fn register(&self) -> Register {
         Register::ClassicalRegister(*self.register.clone())
     }
 
-    fn get_index(&self) -> usize {
+    fn index(&self) -> usize {
         self.index
     }
 }
@@ -105,11 +105,11 @@ impl BitOps for AncillaQubit {
         }
     }
 
-    fn get_register(&self) -> Register {
+    fn register(&self) -> Register {
         Register::AncillaRegister(*self.register.clone())
     }
 
-    fn get_index(&self) -> usize {
+    fn index(&self) -> usize {
         self.index
     }
 }

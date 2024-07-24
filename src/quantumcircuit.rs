@@ -20,8 +20,9 @@ pub struct QuantumCircuit {
 
 impl QuantumCircuit {
     pub fn new(input: String) -> io::Result<Self> {
-        let instr = parser::parse(input);
-        let gates = OperationPool::new(ARENA_SIZE_BYTES)?;
+        let mut parser = parser::Parser::new(input);
+        let instr = parser.parse();
+        let mut gates = OperationPool::new(ARENA_SIZE_BYTES)?;
         let qubits = vec![];
         let clbits = vec![];
 
@@ -56,6 +57,14 @@ impl QuantumCircuit {
         self.gate_lookup.insert(gate_alias, handle);
     }
 
+    pub fn get_gates(&self) -> &OperationPool {
+        &self.gates
+    }
+
+    pub fn get_gate_lookup(&self) -> &HashMap<String, Handle<Box<dyn Operation>>> {
+        &self.gate_lookup
+    }
+
     pub fn get_instructions(&self) -> &Vec<CircuitInstruction> {
         &self.instr
     }
@@ -66,6 +75,20 @@ impl QuantumCircuit {
 
     pub fn get_clbits(&self) -> &Vec<Clbit> {
         &self.clbits
+    }
+
+    pub fn add_qubit(&mut self, qubit: Qubit) {
+        if self.qubits.contains(&qubit) {
+            return;
+        }
+        self.qubits.push(qubit);
+    }
+
+    pub fn add_clbit(&mut self, clbit: Clbit) {
+        if self.clbits.contains(&clbit) {
+            return;
+        }
+        self.clbits.push(clbit);
     }
 }
 
@@ -181,15 +204,19 @@ mod parser {
     use crate::{
         bit::{AncillaQubit, Bit, BitOps, Clbit, Qubit},
         circuit_instruction::CircuitInstruction,
-        instruction::Instruction,
-        register::{AncillaRegister, ClassicalRegister, QuantumRegister, Register},
+        instruction::{Instruction, Operation, Unit},
+        register::{AncillaRegister, ClassicalRegister, QuantumRegister, Register, RegisterOps},
+        util::pool::Handle,
     };
 
     use regex::Regex;
 
-    use super::tokenizer::{Token, Tokenizer};
+    use super::{
+        tokenizer::{Token, Tokenizer},
+        QuantumCircuit,
+    };
 
-    struct Parser {
+    pub struct Parser {
         tokens: Vec<Token>,
         pos: usize,
     }
@@ -198,17 +225,18 @@ mod parser {
         pub fn new(input: String) -> Self {
             let mut tokenizer = Tokenizer::new(input);
             let tokens = tokenizer.tokenize();
+
             Self { tokens, pos: 0 }
         }
 
-        pub fn parse(&mut self) -> Vec<CircuitInstruction> {
+        pub fn parse(&mut self, qc: &mut QuantumCircuit) -> Vec<CircuitInstruction> {
             let mut instructions = Vec::new();
             self.expect_token(Token::OpenBracket);
             while self.pos < self.tokens.len() {
                 if let Some(token) = self.next_token() {
                     match token {
                         Token::Identifier(id) if id == "CircuitInstruction" => {
-                            let instruction = self.parse_circuit_instruction();
+                            let instruction = self.parse_circuit_instruction(qc);
                             instructions.push(instruction);
                         }
                         Token::CloseBracket => break,
@@ -219,34 +247,55 @@ mod parser {
             instructions
         }
 
-        fn parse_circuit_instruction(&mut self) -> CircuitInstruction {
+        fn parse_circuit_instruction(&mut self, qc: &mut QuantumCircuit) -> CircuitInstruction {
             self.expect_token(Token::OpenParen);
-            let operation = self.parse_operation();
-            let qubits = self.parse_group("qubits");
-            let clbits = self.parse_group("clbits");
+            let (handle, instr) = self.parse_operation(qc);
+
+            // Maybe no clone in the future? Overhead should be minimal tho
+            let qubits: Vec<Qubit> = self
+                .parse_group("qubits")
+                .iter()
+                .map(|bit| Qubit::from(bit.clone()))
+                .collect();
+            let clbits: Vec<Clbit> = self
+                .parse_group("clbits")
+                .iter()
+                .map(|bit| Clbit::from(bit.clone()))
+                .collect();
             self.expect_token(Token::CloseParen);
 
-            CircuitInstruction::new()
+            for (qubit, clbit) in qubits.iter().zip(clbits.iter()) {
+                qc.add_qubit(*qubit);
+                qc.add_clbit(*clbit);
+            }
+
+            let qubit_indices = qubits.iter().map(|qubit| qubit.index()).collect();
+            let clbit_indices = clbits.iter().map(|clbit| clbit.index()).collect();
+
+            CircuitInstruction::new(handle, qubit_indices, clbit_indices)
         }
 
-        fn parse_operation(&mut self) -> Instruction {
+        fn parse_operation(
+            &mut self,
+            qc: &QuantumCircuit,
+        ) -> (Handle<Box<dyn Operation>>, Instruction) {
             self.expect_token(Token::Identifier("operation".to_string()));
             self.expect_token(Token::Equals);
             self.expect_token(Token::Identifier("Instruction".to_string()));
             self.expect_token(Token::OpenParen);
 
             let name = self.parse_key_value("name", true).unwrap();
-            let num_qubits = self
+            let num_qubits: usize = self
                 .parse_key_value("num_qubits", false)
                 .unwrap()
                 .parse()
                 .unwrap();
-            let num_clbits = self
+            let num_clbits: usize = self
                 .parse_key_value("num_clbits", false)
                 .unwrap()
                 .parse()
                 .unwrap();
-            let params = self
+            let params: Vec<f64> = self
                 .parse_key_value("params", false)
                 .unwrap_or_default()
                 .split(',')
@@ -254,12 +303,11 @@ mod parser {
                 .collect();
 
             self.expect_token(Token::CloseParen);
-            Instruction {
-                name,
-                num_qubits,
-                num_clbits,
-                params,
-            }
+
+            let handle = *qc.get_gate_lookup().get(&name).unwrap();
+            let instr = Instruction::new(params, None, Unit::DT);
+
+            (handle, instr)
         }
 
         /// Creates a group of bits
@@ -286,6 +334,7 @@ mod parser {
         }
 
         /// Parses a single bit instruction
+        /// TODO: Fix the Register stuff
         fn parse_bit(&mut self) -> Bit {
             let bit_pattern =
                 Regex::new(r"(QuantumRegister|ClassicalRegister|AncillaRegister)\((.*?)\)")
