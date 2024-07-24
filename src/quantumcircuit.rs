@@ -1,34 +1,59 @@
+use std::{collections::HashMap, io};
+
+// use list_any::{VecAny, VecAnyGuard};
+
 use crate::{
     bit::{Clbit, Qubit},
     circuit_instruction::CircuitInstruction,
-    instruction::Instruction,
-    util::pool::{AsPool, Pool},
+    gates::singleton::{HadamardGate, XGate, YGate, ZGate},
+    instruction::{Gate, Instruction, Operation, OperationPool},
+    util::pool::{AsPool, Handle, Pool, ARENA_SIZE_BYTES},
 };
 
 pub struct QuantumCircuit {
     instr: Vec<CircuitInstruction>,
-    gates: Pool<Instruction, ()>,
+    gates: OperationPool,
+    gate_lookup: HashMap<String, Handle<Box<dyn Operation>>>,
     qubits: Vec<Qubit>,
     clbits: Vec<Clbit>,
 }
 
 impl QuantumCircuit {
-    pub fn new(input: String) -> Self {
+    pub fn new(input: String) -> io::Result<Self> {
         let instr = parser::parse(input);
-        let gates = Pool::new().expect("Failed to create pool");
+        let gates = OperationPool::new(ARENA_SIZE_BYTES)?;
         let qubits = vec![];
         let clbits = vec![];
 
-        QuantumCircuit {
+        // TODO: In the future this should be pull from every struct in gates
+        // and add them to the pool and the map. This is really ugly and should
+        // be fixed. Currently, I'm having an issue coming up with a good
+        // memory efficient way to iterate through all the gates. I was thinking
+        // of using VecAny but it doesn't seem to do exactly what I need (also
+        // there's memory overhead which is whatever but still not ideal). Maybe
+        // there's a way I can just directly pull from the gates module...
+        let mut gate_lookup = HashMap::new();
+        let handle_x = gates.add(&XGate::new());
+        let handle_y = gates.add(&YGate::new());
+        let handle_z = gates.add(&ZGate::new());
+        let handle_hadamard = gates.add(&HadamardGate::new());
+        gate_lookup.insert("x".to_string(), handle_x);
+        gate_lookup.insert("y".to_string(), handle_y);
+        gate_lookup.insert("z".to_string(), handle_z);
+        gate_lookup.insert("h".to_string(), handle_hadamard);
+
+        Ok(QuantumCircuit {
             instr,
             gates,
+            gate_lookup,
             qubits,
             clbits,
-        }
+        })
     }
 
-    pub fn add_gate(&mut self, gate: Instruction) {
-        self.gates.add(gate);
+    pub fn add_gate(&mut self, gate_alias: String, gate_struct: &dyn Operation) {
+        let handle = self.gates.add(gate_struct);
+        self.gate_lookup.insert(gate_alias, handle);
     }
 
     pub fn get_instructions(&self) -> &Vec<CircuitInstruction> {
@@ -200,6 +225,8 @@ mod parser {
             let qubits = self.parse_group("qubits");
             let clbits = self.parse_group("clbits");
             self.expect_token(Token::CloseParen);
+
+            CircuitInstruction::new()
         }
 
         fn parse_operation(&mut self) -> Instruction {

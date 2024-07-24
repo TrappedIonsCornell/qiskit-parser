@@ -48,6 +48,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97b3888a4aecf77e811145cadf6eef5901f4782c53886191b2f693f24761847c"
 
 [[package]]
+name = "list-any"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93d1d1b0528cc76bed22884ae4f56f5548d80643f848d6df0c652032f7ca6165"
+
+[[package]]
 name = "lock_api"
 version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -266,6 +272,7 @@ dependencies = [
 name = "qiskit-parser"
 version = "0.1.0"
 dependencies = [
+ "list-any",
  "memmap2",
  "ndarray",
  "numpy",

@@ -35,7 +35,7 @@ impl Gate for XGate {
 
 #[derive(Debug, PartialEq, Clone, Operation)]
 /// A Pauli-Y gate
-struct YGate {
+pub struct YGate {
     instruction: Instruction,
 }
 
@@ -64,7 +64,7 @@ impl Gate for YGate {
 
 #[derive(Debug, PartialEq, Clone, Operation)]
 /// A Pauli-Z gate
-struct ZGate {
+pub struct ZGate {
     instruction: Instruction,
 }
 

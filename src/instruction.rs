@@ -5,6 +5,7 @@ use std::fmt::Debug;
 
 use std::{io, mem::ManuallyDrop};
 
+use crate::gates::singleton::{XGate, YGate};
 use crate::util::pool::{Handle, MMapArena, ARENA_SIZE_BYTES};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -76,22 +77,4 @@ impl OperationPool {
     pub fn get(&self, handle: Handle<Box<dyn Operation>>) -> &dyn Operation {
         unsafe { &**handle.pointer() }
     }
-}
-
-fn main() -> io::Result<()> {
-    let mut pool = OperationPool::new(ARENA_SIZE_BYTES)?;
-
-    // let a = StructA { data: 42 };
-    // let b = StructB { data: 84 };
-
-    // let handle_a = pool.add(Box::new(a));
-    // let handle_b = pool.add(Box::new(b));
-
-    // let item_a = pool.get(handle_a);
-    // let item_b = pool.get(handle_b);
-
-    // item_a.do_something();
-    // item_b.do_something();
-
-    Ok(())
 }
