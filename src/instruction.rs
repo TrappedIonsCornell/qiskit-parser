@@ -5,8 +5,22 @@ use std::fmt::Debug;
 
 use std::{io, mem::ManuallyDrop};
 
-use crate::gates::singleton::{XGate, YGate};
-use crate::util::pool::{Handle, MMapArena, ARENA_SIZE_BYTES};
+use crate::util::pool::{Handle, MMapArena};
+
+pub trait Operation {
+    fn params(&self) -> &Vec<f64>;
+    fn set_params(&mut self, params: Vec<f64>);
+
+    fn duration(&self) -> Option<f64>;
+    fn set_duration(&mut self, duration: Option<f64>);
+
+    fn unit(&self) -> Unit;
+    fn set_unit(&mut self, unit: Unit);
+}
+
+pub trait Gate {
+    fn to_matrix(&self) -> Array2<Complex64>;
+}
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Unit {
@@ -42,17 +56,18 @@ impl Operation for Instruction {
     fn unit(&self) -> Unit {
         self.unit
     }
-}
 
+    fn set_params(&mut self, params: Vec<f64>) {
+        self.params = params;
+    }
 
-pub trait Operation {
-    fn params(&self) -> &Vec<f64>;
-    fn duration(&self) -> Option<f64>;
-    fn unit(&self) -> Unit;
-}
+    fn set_duration(&mut self, duration: Option<f64>) {
+        self.duration = duration;
+    }
 
-pub trait Gate {
-    fn to_matrix(&self) -> Array2<Complex64>;
+    fn set_unit(&mut self, unit: Unit) {
+        self.unit = unit;
+    }
 }
 
 pub struct OperationPool {
@@ -69,7 +84,8 @@ impl OperationPool {
     pub fn add(&mut self, item: &dyn Operation) -> Handle<Box<dyn Operation>> {
         unsafe {
             let next_item = self.arena.alloc();
-            *(next_item as *mut ManuallyDrop<Box<dyn Operation>>) = ManuallyDrop::new(Box::new(item));
+            *(next_item as *mut ManuallyDrop<Box<&dyn Operation>>) =
+                ManuallyDrop::new(Box::new(item));
             Handle::from(next_item)
         }
     }
@@ -77,4 +93,23 @@ impl OperationPool {
     pub fn get(&self, handle: Handle<Box<dyn Operation>>) -> &dyn Operation {
         unsafe { &**handle.pointer() }
     }
+}
+
+#[macro_export]
+macro_rules! init_operation {
+    ($struct_name:ident, $params:expr) => {{
+        let mut instance = $struct_name {
+            instruction: Instruction {
+                params: vec![],
+                duration: None,
+                unit: Unit, // Initialize with a default value if needed
+                // initialize other fields if needed...
+            },
+            // initialize other fields if needed...
+        };
+        instance.set_params($params);
+        // instance.set_duration($duration);
+        // instance.set_unit($unit);
+        Box::new(instance) as Box<dyn Operation>
+    }};
 }

@@ -1,5 +1,3 @@
-use crate::register::{AncillaRegister, ClassicalRegister, QuantumRegister, Register};
-
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
 /// A generic bit
 pub enum Bit {
@@ -9,22 +7,22 @@ pub enum Bit {
 }
 
 pub trait BitOps : From<Bit> {
-    fn new(register: Register, index: usize) -> Self;
-    fn register(&self) -> Register;
+    fn new(name: String, index: usize) -> Self;
+    fn name(&self) -> String;
     fn index(&self) -> usize;
 }
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
 /// A classical bit
 pub struct Clbit {
-    register: Box<ClassicalRegister>,
+    name: String,
     index: usize,
 }
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
 /// A quantum bit
 pub struct Qubit {
-    register: Box<QuantumRegister>,
+    name: String,
     index: usize,
 }
 
@@ -59,20 +57,17 @@ impl From<Bit> for AncillaQubit {
 /// An ancilla quantum bit (i.e. a quantum bit that is not part of the main
 /// register)
 pub struct AncillaQubit {
-    register: Box<AncillaRegister>,
+    name: String,
     index: usize,
 }
 
 impl BitOps for Qubit {
-    fn new(register: Register, index: usize) -> Self {
-        Qubit {
-            register: Box::new(QuantumRegister::from(register)),
-            index,
-        }
+    fn new(name: String, index: usize) -> Self {
+        Qubit { name, index }
     }
 
-    fn register(&self) -> Register {
-        Register::QuantumRegister(*self.register.clone())
+    fn name(&self) -> String {
+        self.name.clone()
     }
 
     fn index(&self) -> usize {
@@ -81,15 +76,12 @@ impl BitOps for Qubit {
 }
 
 impl BitOps for Clbit {
-    fn new(register: Register, index: usize) -> Self {
-        Clbit {
-            register: Box::new(ClassicalRegister::from(register)),
-            index,
-        }
+    fn new(name: String, index: usize) -> Self {
+        Clbit { name, index }
     }
 
-    fn register(&self) -> Register {
-        Register::ClassicalRegister(*self.register.clone())
+    fn name(&self) -> String {
+        self.name.clone()
     }
 
     fn index(&self) -> usize {
@@ -98,15 +90,12 @@ impl BitOps for Clbit {
 }
 
 impl BitOps for AncillaQubit {
-    fn new(register: Register, index: usize) -> Self {
-        AncillaQubit {
-            register: Box::new(AncillaRegister::from(register)),
-            index,
-        }
+    fn new(name: String, index: usize) -> Self {
+        AncillaQubit { name, index }
     }
 
-    fn register(&self) -> Register {
-        Register::AncillaRegister(*self.register.clone())
+    fn name(&self) -> String {
+        self.name.clone()
     }
 
     fn index(&self) -> usize {

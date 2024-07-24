@@ -24,6 +24,18 @@ pub fn derive_operation(input: TokenStream) -> TokenStream {
                 self.instruction.unit()
             }
 
+            fn set_params(&mut self, params: Vec<f64>) {
+                self.instruction.set_params(params);
+            }
+
+            fn set_duration(&mut self, duration: Option<f64>) {
+                self.instruction.set_duration(duration);
+            }
+
+            fn set_unit(&mut self, unit: Unit) {
+                self.instruction.set_unit(unit);
+            }
+
         }
     };
     gen.into()

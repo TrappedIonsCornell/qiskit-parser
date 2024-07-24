@@ -6,8 +6,8 @@ use crate::{
     bit::{Clbit, Qubit},
     circuit_instruction::CircuitInstruction,
     gates::singleton::{HadamardGate, XGate, YGate, ZGate},
-    instruction::{Gate, Instruction, Operation, OperationPool},
-    util::pool::{AsPool, Handle, Pool, ARENA_SIZE_BYTES},
+    instruction::{Operation, OperationPool},
+    util::pool::{Handle, ARENA_SIZE_BYTES},
 };
 
 pub struct QuantumCircuit {
@@ -21,27 +21,13 @@ pub struct QuantumCircuit {
 impl QuantumCircuit {
     pub fn new(input: String) -> io::Result<Self> {
         let mut parser = parser::Parser::new(input);
-        let instr = parser.parse();
         let mut gates = OperationPool::new(ARENA_SIZE_BYTES)?;
-        let qubits = vec![];
-        let clbits = vec![];
-
-        // TODO: In the future this should be pull from every struct in gates
-        // and add them to the pool and the map. This is really ugly and should
-        // be fixed. Currently, I'm having an issue coming up with a good
-        // memory efficient way to iterate through all the gates. I was thinking
-        // of using VecAny but it doesn't seem to do exactly what I need (also
-        // there's memory overhead which is whatever but still not ideal). Maybe
-        // there's a way I can just directly pull from the gates module...
+        let mut qubits: Vec<Qubit> = vec![];
+        let mut clbits: Vec<Clbit> = vec![];
         let mut gate_lookup = HashMap::new();
-        let handle_x = gates.add(&XGate::new());
-        let handle_y = gates.add(&YGate::new());
-        let handle_z = gates.add(&ZGate::new());
-        let handle_hadamard = gates.add(&HadamardGate::new());
-        gate_lookup.insert("x".to_string(), handle_x);
-        gate_lookup.insert("y".to_string(), handle_y);
-        gate_lookup.insert("z".to_string(), handle_z);
-        gate_lookup.insert("h".to_string(), handle_hadamard);
+
+        let instr: Vec<CircuitInstruction> =
+            parser.parse(&mut gates, &mut gate_lookup, &mut qubits, &mut clbits);
 
         Ok(QuantumCircuit {
             instr,
@@ -201,11 +187,14 @@ mod tokenizer {
 }
 
 mod parser {
+    use std::collections::HashMap;
+
     use crate::{
         bit::{AncillaQubit, Bit, BitOps, Clbit, Qubit},
         circuit_instruction::CircuitInstruction,
-        instruction::{Instruction, Operation, Unit},
-        register::{AncillaRegister, ClassicalRegister, QuantumRegister, Register, RegisterOps},
+        gates::singleton::{HadamardGate, XGate, YGate, ZGate},
+        init_operation,
+        instruction::{Instruction, Operation, OperationPool, Unit},
         util::pool::Handle,
     };
 
@@ -229,14 +218,21 @@ mod parser {
             Self { tokens, pos: 0 }
         }
 
-        pub fn parse(&mut self, qc: &mut QuantumCircuit) -> Vec<CircuitInstruction> {
+        pub fn parse(
+            &mut self,
+            gates: &mut OperationPool,
+            gate_map: &mut HashMap<String, Handle<Box<dyn Operation>>>,
+            qubits: &mut Vec<Qubit>,
+            clbits: &mut Vec<Clbit>,
+        ) -> Vec<CircuitInstruction> {
             let mut instructions = Vec::new();
             self.expect_token(Token::OpenBracket);
             while self.pos < self.tokens.len() {
                 if let Some(token) = self.next_token() {
                     match token {
                         Token::Identifier(id) if id == "CircuitInstruction" => {
-                            let instruction = self.parse_circuit_instruction(qc);
+                            let instruction =
+                                self.parse_circuit_instruction(gates, gate_map, qubits, clbits);
                             instructions.push(instruction);
                         }
                         Token::CloseBracket => break,
@@ -247,26 +243,36 @@ mod parser {
             instructions
         }
 
-        fn parse_circuit_instruction(&mut self, qc: &mut QuantumCircuit) -> CircuitInstruction {
+        fn parse_circuit_instruction(
+            &mut self,
+            gates: &mut OperationPool,
+            gate_map: &mut HashMap<String, Handle<Box<dyn Operation>>>,
+            qubits: &mut Vec<Qubit>,
+            clbits: &mut Vec<Clbit>,
+        ) -> CircuitInstruction {
             self.expect_token(Token::OpenParen);
-            let (handle, instr) = self.parse_operation(qc);
+            let (handle) = self.parse_operation(gates, gate_map);
 
             // Maybe no clone in the future? Overhead should be minimal tho
-            let qubits: Vec<Qubit> = self
+            let parsed_qubits: Vec<Qubit> = self
                 .parse_group("qubits")
                 .iter()
                 .map(|bit| Qubit::from(bit.clone()))
                 .collect();
-            let clbits: Vec<Clbit> = self
+            let parsed_clbits: Vec<Clbit> = self
                 .parse_group("clbits")
                 .iter()
                 .map(|bit| Clbit::from(bit.clone()))
                 .collect();
             self.expect_token(Token::CloseParen);
 
-            for (qubit, clbit) in qubits.iter().zip(clbits.iter()) {
-                qc.add_qubit(*qubit);
-                qc.add_clbit(*clbit);
+            for (qubit, clbit) in parsed_qubits.iter().zip(parsed_clbits.iter()) {
+                if !qubits.contains(&qubit) {
+                    qubits.push(qubit.clone());
+                }
+                if !clbits.contains(&clbit) {
+                    clbits.push(clbit.clone());
+                }
             }
 
             let qubit_indices = qubits.iter().map(|qubit| qubit.index()).collect();
@@ -277,14 +283,17 @@ mod parser {
 
         fn parse_operation(
             &mut self,
-            qc: &QuantumCircuit,
-        ) -> (Handle<Box<dyn Operation>>, Instruction) {
+            gates: &mut OperationPool,
+            gate_map: &mut HashMap<String, Handle<Box<dyn Operation>>>,
+        ) -> Handle<Box<dyn Operation>> {
             self.expect_token(Token::Identifier("operation".to_string()));
             self.expect_token(Token::Equals);
             self.expect_token(Token::Identifier("Instruction".to_string()));
             self.expect_token(Token::OpenParen);
 
             let name = self.parse_key_value("name", true).unwrap();
+
+            // unused... will clean up parsing to ignore stuff like this
             let num_qubits: usize = self
                 .parse_key_value("num_qubits", false)
                 .unwrap()
@@ -295,6 +304,7 @@ mod parser {
                 .unwrap()
                 .parse()
                 .unwrap();
+
             let params: Vec<f64> = self
                 .parse_key_value("params", false)
                 .unwrap_or_default()
@@ -304,37 +314,86 @@ mod parser {
 
             self.expect_token(Token::CloseParen);
 
-            let handle = *qc.get_gate_lookup().get(&name).unwrap();
             let instr = Instruction::new(params, None, Unit::DT);
 
-            (handle, instr)
+            // TODO: In the future this should be pull from every struct in gates
+            // and add them to the pool and the map. This is really ugly and should
+            // be fixed. Currently, I'm having an issue coming up with a good
+            // memory efficient way to iterate through all the gates. I was thinking
+            // of using VecAny but it doesn't seem to do exactly what I need (also
+            // there's memory overhead which is whatever but still not ideal). Maybe
+            // there's a way I can just directly pull from the gates module...
+            match name.as_str() {
+                "x" => {
+                    let handle = gates.add(&XGate::new(instr));
+                    gate_map.insert("x".to_string(), handle);
+                    handle
+                }
+                "y" => {
+                    let handle = gates.add(&YGate::new(instr));
+                    gate_map.insert("y".to_string(), handle);
+                    handle
+                }
+                "z" => {
+                    let handle = gates.add(&ZGate::new(instr));
+                    gate_map.insert("z".to_string(), handle);
+                    handle
+                }
+                "h" => {
+                    let handle = gates.add(&HadamardGate::new(instr));
+                    gate_map.insert("h".to_string(), handle);
+                    handle
+                }
+                _ => panic!("Unexpected gate name: {:?}", name),
+            }
         }
 
         /// Creates a group of bits
         fn parse_group(&mut self, group_name: &str) -> Vec<Bit> {
+            let bit_pattern = Regex::new(r"(Qubit|Clbit|AncillaQubit)\((.*?)\)").unwrap();
+
             self.expect_token(Token::Comma);
             self.expect_token(Token::Identifier(group_name.to_string()));
             self.expect_token(Token::Equals);
             self.expect_token(Token::OpenParen);
 
             let mut group = Vec::new();
-            while let Some(token) = self.next_token() {
-                match token {
-                    Token::Identifier(id) if id == "Qubit" => {
-                        self.expect_token(Token::OpenParen);
-                        group.push(self.parse_bit());
+
+            while let Some(Token::Identifier(bit_type)) = self.next_token() {
+                if bit_pattern.is_match(&bit_type) {
+                    self.expect_token(Token::OpenParen);
+
+                    let size = self.expect_number();
+
+                    let name = self.expect_string();
+                    // Parse the index
+                    self.expect_token(Token::Comma);
+                    let index = self.expect_number() as usize;
+                    self.expect_token(Token::CloseParen);
+
+                    match bit_type.as_str() {
+                        "Qubit" => {
+                            group.push(Bit::Qubit(Qubit::new(name, index)));
+                        }
+                        "Clbit" => {
+                            group.push(Bit::Clbit(Clbit::new(name, index)));
+                        }
+                        "AncillaQubit" => {
+                            group.push(Bit::AncillaQubit(AncillaQubit::new(name, index)));
+                        }
+                        _ => panic!("Unexpected bit type: {:?}", bit_type),
                     }
-                    Token::CloseParen => break,
-                    _ => panic!("Unexpected token in group: {:?}", token),
+                } else {
+                    panic!("Unexpected bit type format: {:?}", bit_type);
                 }
             }
+
             self.expect_token(Token::CloseParen);
             self.expect_token(Token::Comma);
             group
         }
 
         /// Parses a single bit instruction
-        /// TODO: Fix the Register stuff
         fn parse_bit(&mut self) -> Bit {
             let bit_pattern =
                 Regex::new(r"(QuantumRegister|ClassicalRegister|AncillaRegister)\((.*?)\)")
@@ -344,10 +403,10 @@ mod parser {
                 if bit_pattern.is_match(&bit_type) {
                     self.expect_token(Token::OpenParen);
 
-                    // Parse the register
-                    let size = self.expect_number() as usize;
-                    let name = self.expect_string();
+                    // unused
+                    let size = self.expect_number();
 
+                    let name = self.expect_string();
                     // Parse the index
                     self.expect_token(Token::Comma);
                     let index = self.expect_number() as usize;
@@ -355,19 +414,13 @@ mod parser {
 
                     match bit_type.as_str() {
                         "QuantumRegister" => {
-                            let register =
-                                Register::QuantumRegister(QuantumRegister::new(size, name));
-                            return Bit::Qubit(Qubit::new(register, index));
+                            return Bit::Qubit(Qubit::new(name, index));
                         }
                         "ClassicalRegister" => {
-                            let register =
-                                Register::ClassicalRegister(ClassicalRegister::new(size, name));
-                            return Bit::Clbit(Clbit::new(register, index));
+                            return Bit::Clbit(Clbit::new(name, index));
                         }
                         "AncillaRegister" => {
-                            let register =
-                                Register::AncillaRegister(AncillaRegister::new(size, name));
-                            return Bit::AncillaQubit(AncillaQubit::new(register, index));
+                            return Bit::AncillaQubit(AncillaQubit::new(name, index));
                         }
                         _ => panic!("Unexpected bit type: {:?}", bit_type),
                     }
@@ -438,7 +491,10 @@ mod tests {
     fn test_single_qubit_one_gate() {
         let input = "[CircuitInstruction(operation=Instruction(name='x', num_qubits=1, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(1, 'q'), 0),), clbits=())]";
 
-        let parser = QuantumCircuit::new(input.to_string());
+        let parser = QuantumCircuit::new(input.to_string()).unwrap();
+
+        let instructions = parser.get_instructions();
+        assert_eq!(instructions.len(), 1);
     }
 
     /// Testing an X and Y gate

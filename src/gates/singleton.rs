@@ -1,7 +1,7 @@
 use ndarray::Array2;
 use numpy::Complex64;
 
-use crate::instruction::{Gate, Instruction, Operation, Unit};
+use crate::instruction::{self, Gate, Instruction, Operation, Unit};
 use operation_macro::Operation;
 
 #[derive(Debug, PartialEq, Operation)]
@@ -11,9 +11,9 @@ pub struct XGate {
 }
 
 impl XGate {
-    pub fn new() -> Self {
+    pub fn new(instruction: Instruction) -> Self {
         XGate {
-            instruction: Instruction::new(vec![], None, Unit::DT),
+            instruction,
         }
     }
 }
@@ -40,9 +40,9 @@ pub struct YGate {
 }
 
 impl YGate {
-    pub fn new() -> Self {
+    pub fn new(instruction: Instruction) -> Self {
         YGate {
-            instruction: Instruction::new(vec![], None, Unit::DT),
+            instruction,
         }
     }
 }
@@ -69,9 +69,9 @@ pub struct ZGate {
 }
 
 impl ZGate {
-    pub fn new() -> Self {
+    pub fn new(instruction: Instruction) -> Self {
         ZGate {
-            instruction: Instruction::new(vec![], None, Unit::DT),
+            instruction,
         }
     }
 }
@@ -98,7 +98,7 @@ pub struct HadamardGate {
 }
 
 impl HadamardGate {
-    pub fn new() -> Self {
+    pub fn new(instruction: Instruction) -> Self {
         HadamardGate {
             instruction: Instruction::new(vec![], None, Unit::DT),
         }
