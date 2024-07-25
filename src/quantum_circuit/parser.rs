@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 
 use ndarray::Array2;
+use numpy::Complex64;
 
 use crate::{
     bit::{AncillaQubit, Bit, BitOps, Clbit, Qubit},
     circuit_instruction::CircuitInstruction,
-    operations::{Delay, Gate, Operation, Unit},
+    operations::{Delay, Gate, Operation, TimeUnit},
 };
 
 use super::tokenizer::{Token, Tokenizer};
@@ -13,21 +14,82 @@ use super::tokenizer::{Token, Tokenizer};
 pub struct Parser {
     tokens: Vec<Token>,
     pos: usize,
+    mtx_map: HashMap<String, Array2<Complex64>>,
 }
 
 impl Parser {
     pub fn new(input: String) -> Self {
         let mut tokenizer = Tokenizer::new(input);
         let tokens = tokenizer.tokenize();
-        println!("{:?}", tokens);
 
-        Self { tokens, pos: 0 }
+        let mut mtx_map = HashMap::new();
+
+        // Eventually this will pull every function from the gates module
+        mtx_map.insert(
+            "x".to_string(),
+            Array2::from_shape_vec(
+                (2, 2),
+                vec![
+                    Complex64::new(0.0, 0.0),
+                    Complex64::new(1.0, 0.0),
+                    Complex64::new(1.0, 0.0),
+                    Complex64::new(-0.0, 0.0),
+                ],
+            )
+            .unwrap(),
+        );
+        mtx_map.insert(
+            "y".to_string(),
+            Array2::from_shape_vec(
+                (2, 2),
+                vec![
+                    Complex64::new(0.0, 0.0),
+                    Complex64::new(0.0, -1.0),
+                    Complex64::new(0.0, 1.0),
+                    Complex64::new(-0.0, 0.0),
+                ],
+            )
+            .unwrap(),
+        );
+        mtx_map.insert(
+            "z".to_string(),
+            Array2::from_shape_vec(
+                (2, 2),
+                vec![
+                    Complex64::new(1.0, 0.0),
+                    Complex64::new(0.0, 0.0),
+                    Complex64::new(0.0, 0.0),
+                    Complex64::new(-1.0, 0.0),
+                ],
+            )
+            .unwrap(),
+        );
+
+        let hadamard = 1.0 / 2.0_f64.sqrt();
+        mtx_map.insert(
+            "h".to_string(),
+            Array2::from_shape_vec(
+                (2, 2),
+                vec![
+                    Complex64::new(hadamard, 0.0),
+                    Complex64::new(hadamard, 0.0),
+                    Complex64::new(hadamard, 0.0),
+                    Complex64::new(-hadamard, 0.0),
+                ],
+            )
+            .unwrap(),
+        );
+
+        Self {
+            tokens,
+            pos: 0,
+            mtx_map,
+        }
     }
 
     pub fn parse(
         &mut self,
         gates: &mut Vec<Operation>,
-        gate_map: &mut HashMap<String, &Operation>,
         qubits: &mut Vec<Qubit>,
         clbits: &mut Vec<Clbit>,
     ) -> Vec<CircuitInstruction> {
@@ -37,7 +99,7 @@ impl Parser {
             if let Some(token) = self.next_token() {
                 match token {
                     Token::Identifier(id) if id == "CircuitInstruction" => {
-                        let instruction = self.parse_circuit_instruction(gates, gate_map, qubits, clbits);
+                        let instruction = self.parse_circuit_instruction(gates, qubits, clbits);
                         instructions.push(instruction);
                     }
                     Token::CloseBracket => break,
@@ -51,12 +113,11 @@ impl Parser {
     fn parse_circuit_instruction(
         &mut self,
         operations: &mut Vec<Operation>,
-        op_map: &mut HashMap<String, &Operation>,
         qubits: &mut Vec<Qubit>,
         clbits: &mut Vec<Clbit>,
     ) -> CircuitInstruction {
         self.expect_token(Token::OpenParen);
-        let operation = self.parse_operation(operations, op_map);
+        let operation = self.parse_operation(operations);
 
         // Maybe no clone in the future? Overhead should be minimal tho
         let parsed_qubits: Vec<Qubit> = self
@@ -71,10 +132,12 @@ impl Parser {
             .collect();
         self.expect_token(Token::CloseParen);
 
-        for (qubit, clbit) in parsed_qubits.iter().zip(parsed_clbits.iter()) {
+        for qubit in parsed_qubits.iter() {
             if !qubits.contains(&qubit) {
                 qubits.push(qubit.clone());
             }
+        }
+        for clbit in parsed_clbits.iter() {
             if !clbits.contains(&clbit) {
                 clbits.push(clbit.clone());
             }
@@ -86,7 +149,7 @@ impl Parser {
         CircuitInstruction::new(operation, qubit_indices, clbit_indices)
     }
 
-    fn parse_operation(&mut self, operations: &mut Vec<Operation>, op_map: &mut HashMap<String, &Operation>) -> &Operation {
+    fn parse_operation(&mut self, operations: &mut Vec<Operation>) -> Operation {
         self.expect_token(Token::Identifier("operation".to_string()));
         self.expect_token(Token::Equals);
         self.expect_token(Token::Identifier("Instruction".to_string()));
@@ -102,27 +165,24 @@ impl Parser {
 
         self.expect_token(Token::CloseParen);
 
-
-        if let Some(gate) = op_map.get(&name) {
-            gate.clone()
-        } else {
-            match name.as_str() {
-                "delay" => {
-                    let op = Operation::Delay(Delay::new(0.0));
-                    operations.push(op);
-                    op_map.insert(name.clone(), &op);
-                    &op
-                },
-                _ => {
-                    let op = Operation::Gate(Gate::new(name, params, None, Unit::DT, Array2::zeros((2, 2))));
-                    operations.push(op);
-                    op_map.insert(name.clone(), &op);
-                    &op
-
-                },
+        let operation = match name.as_str() {
+            // gates have custom names
+            _ => {
+                let mtx = match self.mtx_map.get(&name) {
+                    Some(_) => self.mtx_map.get(&name).unwrap().clone(),
+                    None => {
+                        let mtx = Array2::zeros((2, 2));
+                        self.mtx_map.insert(name.clone(), mtx.clone());
+                        mtx
+                    }
+                };
+                let operation =
+                    Operation::Gate(Gate::new(name.clone(), params, None, TimeUnit::DT, mtx));
+                operations.push(operation);
+                operations.last().unwrap().clone()
             }
-        }
-
+        };
+        operation
     }
 
     fn parse_bits(&mut self, group_name: &str) -> Vec<Bit> {

@@ -1,8 +1,6 @@
 mod parser;
 mod tokenizer;
 
-use std::collections::HashMap;
-
 use crate::{
     bit::{Clbit, Qubit},
     circuit_instruction::CircuitInstruction,
@@ -18,30 +16,16 @@ pub struct QuantumCircuit {
 impl QuantumCircuit {
     pub fn new(input: String, custom_gates: Option<Vec<Gate>>) -> Self {
         let mut operations: Vec<Operation> = Vec::new();
-
-        // get all predefined gates
-        // crate::gates::singleton::call_all();
-
         if let Some(c_gates) = custom_gates {
             operations.extend(c_gates.into_iter().map(|gate| Operation::Gate(gate)));
         }
-
-        let op_map: HashMap<String, &Operation> = operations
-            .iter()
-            .map(|op| {
-                if let Operation::Gate(gate) = op {
-                    (gate.name().to_string(), op)
-                } else {
-                    unimplemented!("Only gates for now")
-                }
-            }).collect();
 
         let mut parser = parser::Parser::new(input);
         let mut qubits: Vec<Qubit> = vec![];
         let mut clbits: Vec<Clbit> = vec![];
 
         let instr: Vec<CircuitInstruction> =
-            parser.parse(&mut operations, &mut op_map, &mut qubits, &mut clbits);
+            parser.parse(&mut operations, &mut qubits, &mut clbits);
 
         QuantumCircuit {
             instr,
@@ -79,6 +63,8 @@ impl QuantumCircuit {
 
 #[cfg(test)]
 mod tests {
+    use crate::gates::singleton as singleton_gates;
+
     use super::*;
 
     /// Testing an X gate /
@@ -86,30 +72,61 @@ mod tests {
     fn test_single_qubit_one_gate() {
         let input = "[CircuitInstruction(operation=Instruction(name='x', num_qubits=1, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(1, 'q'), 0),), clbits=())]";
 
-        let qc = QuantumCircuit::new(input.to_string());
+        let qc = QuantumCircuit::new(input.to_string(), None);
 
         let instructions = qc.get_instructions();
         assert_eq!(instructions.len(), 1);
 
         let instr = instructions.get(0).unwrap();
-        let operation = instr.get_operation();
-        // println!("{:?}", gate.params());
+        assert_eq!(instr, &CircuitInstruction::new(
+            Operation::Gate(singleton_gates::x()),
+            vec![0],
+            vec![],
+        ));
     }
 
-    // /// Testing an X and Y gate
-    // #[test]
-    // fn test_single_qubit_two_gates() {
-    //     let input = "[CircuitInstruction(operation=Instruction(name='x', num_qubits=1, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(1, 'q'), 0),), clbits=()), CircuitInstruction(operation=Instruction(name='y', num_qubits=1, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(1, 'q'), 0),), clbits=())]";
+    /// Testing an X and Y gate
+    #[test]
+    fn test_single_qubit_two_gates() {
+        let input = "[CircuitInstruction(operation=Instruction(name='x', num_qubits=1, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(1, 'q'), 0),), clbits=()), CircuitInstruction(operation=Instruction(name='y', num_qubits=1, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(1, 'q'), 0),), clbits=())]";
 
-    //     let parser = QuantumCircuit::new(input.to_string());
-    // }
+        let qc = QuantumCircuit::new(input.to_string(), None);
+
+        let instructions = qc.get_instructions();
+        assert_eq!(instructions.len(), 2);
+
+        let instr = instructions.get(0).unwrap();
+        assert_eq!(instr, &CircuitInstruction::new(
+            Operation::Gate(singleton_gates::x()),
+            vec![0],
+            vec![],
+        ));
+
+        let instr = instructions.get(1).unwrap();
+        assert_eq!(instr, &CircuitInstruction::new(
+            Operation::Gate(singleton_gates::y()),
+            vec![0],
+            vec![],
+        ));
+    }
 
     // /// Testing a CNOT gate
     // #[test]
     // fn test_two_qubit_one_gate() {
     //     let input = "[CircuitInstruction(operation=Instruction(name='cx', num_qubits=2, num_clbits=0, params=[]), qubits=(Qubit(QuantumRegister(2, 'q'), 0), Qubit(QuantumRegister(2, 'q'), 1)), clbits=())]";
 
-    //     let parser = QuantumCircuit::new(input.to_string());
+    //     let qc = QuantumCircuit::new(input.to_string(), None);
+
+    //     let instructions = qc.get_instructions();
+    //     assert_eq!(instructions.len(), 1);
+
+    //     let instr = instructions.get(0).unwrap();
+    //     assert_eq!(instr, &CircuitInstruction::new(
+    //         Operation::Gate(singleton_gates::cx()),
+    //         vec![0, 1],
+    //         vec![],
+    //     ));
+
     // }
 
     // /// Testing the Bell state circuit

@@ -4,7 +4,7 @@ use numpy::Complex64;
 use std::fmt::Debug;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Unit {
+pub enum TimeUnit {
     DT,
 }
 
@@ -21,16 +21,17 @@ pub struct Gate {
     name: String,
     params: Vec<f64>,
     duration: Option<f64>,
-    unit: Unit,
+    unit: TimeUnit,
     matrix: Array2<Complex64>,
 }
 
+/// GateBuilder enables custom gate creation
 #[derive(Debug, PartialEq, Clone)]
 pub struct GateBuilder {
     name: Option<String>,
     params: Option<Vec<f64>>,
     duration: Option<f64>,
-    unit: Option<Unit>,
+    unit: Option<TimeUnit>,
     matrix: Option<Array2<Complex64>>,
 }
 
@@ -50,7 +51,7 @@ pub struct Measurement {
 }
 
 impl Gate {
-    pub fn new(name: String, params: Vec<f64>, duration: Option<f64>, unit: Unit, matrix: Array2<Complex64>) -> Self {
+    pub fn new(name: String, params: Vec<f64>, duration: Option<f64>, unit: TimeUnit, matrix: Array2<Complex64>) -> Self {
         Gate {
             name,
             params,
@@ -76,7 +77,7 @@ impl Gate {
         self.duration
     }
 
-    pub fn unit(&self) -> &Unit {
+    pub fn unit(&self) -> &TimeUnit {
         &self.unit
     }
 
@@ -85,9 +86,24 @@ impl Gate {
     }
 }
 
+impl From<Operation> for Gate {
+    fn from(value: Operation) -> Self {
+        match value {
+            Operation::Gate(gate) => gate,
+            _ => panic!("Operation is not a gate"),
+        }
+    }
+}
+
 impl Delay {
     pub fn new(duration: f64) -> Self {
         Delay { duration }
+    }
+}
+
+impl Operation {
+    pub fn id(&self) -> i64 {
+        0
     }
 }
 
@@ -117,7 +133,7 @@ impl GateBuilder {
         self
     }
 
-    fn unit(mut self, unit: Unit) -> Self {
+    fn unit(mut self, unit: TimeUnit) -> Self {
         self.unit = Some(unit);
         self
     }
