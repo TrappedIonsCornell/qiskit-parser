@@ -20,17 +20,17 @@ impl CircuitInstruction {
     }
 
     /// Get the operation of the CircuitInstruction.
-    pub fn get_operation(&self) -> &Operation {
+    pub fn operation(&self) -> &Operation {
         &self.operation
     }
 
-    /// Get the qubits of the CircuitInstruction.
-    pub fn get_qubits(&self) -> &Vec<usize> {
+    /// Get the qubit indices the CircuitInstruction acts on.
+    pub fn qubits(&self) -> &Vec<usize> {
         &self.qubits
     }
 
-    /// Get the classical bits of the CircuitInstruction.
-    pub fn get_clbits(&self) -> &Vec<usize> {
+    /// Get the clbit indices the CircuitInstruction acts on.
+    pub fn clbits(&self) -> &Vec<usize> {
         &self.clbits
     }
 }

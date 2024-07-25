@@ -7,6 +7,7 @@ use crate::{
     operations::{Gate, Operation},
 };
 
+#[derive(Debug, PartialEq, Clone)]
 pub struct QuantumCircuit {
     instr: Vec<CircuitInstruction>,
     qubits: Vec<Qubit>,
@@ -34,15 +35,17 @@ impl QuantumCircuit {
         }
     }
 
-    pub fn get_instructions(&self) -> &Vec<CircuitInstruction> {
+    pub fn instructions(&self) -> &Vec<CircuitInstruction> {
         &self.instr
     }
 
-    pub fn get_qubits(&self) -> &Vec<Qubit> {
+    /// Get the qubit objects for the circuit.
+    pub fn qubits(&self) -> &Vec<Qubit> {
         &self.qubits
     }
 
-    pub fn get_clbits(&self) -> &Vec<Clbit> {
+    /// Get the clbit objects for the circuit.
+    pub fn clbits(&self) -> &Vec<Clbit> {
         &self.clbits
     }
 
@@ -74,7 +77,7 @@ mod tests {
 
         let qc = QuantumCircuit::new(input.to_string(), None);
 
-        let instructions = qc.get_instructions();
+        let instructions = qc.instructions();
         assert_eq!(instructions.len(), 1);
 
         let instr = instructions.get(0).unwrap();
@@ -92,7 +95,7 @@ mod tests {
 
         let qc = QuantumCircuit::new(input.to_string(), None);
 
-        let instructions = qc.get_instructions();
+        let instructions = qc.instructions();
         assert_eq!(instructions.len(), 2);
 
         let instr = instructions.get(0).unwrap();

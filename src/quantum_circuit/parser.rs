@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use ndarray::Array2;
 use numpy::Complex64;
 
+/// TODO: Migrate to a standard parser library instead of a custom one (didn't realized these existed before lol)
+
 use crate::{
     bit::{AncillaQubit, Bit, BitOps, Clbit, Qubit},
     circuit_instruction::CircuitInstruction,
