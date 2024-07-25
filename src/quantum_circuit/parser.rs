@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
+use ndarray::Array2;
+
 use crate::{
     bit::{AncillaQubit, Bit, BitOps, Clbit, Qubit},
     circuit_instruction::CircuitInstruction,
-    gates::singleton::{HadamardGate, XGate, YGate, ZGate},
-    instruction::{Instruction, Operation, OperationPool, Unit},
-    util::pool::Handle,
+    operations::{Delay, Gate, Operation, Unit},
 };
 
 use super::tokenizer::{Token, Tokenizer};
@@ -26,8 +26,8 @@ impl Parser {
 
     pub fn parse(
         &mut self,
-        gates: &mut OperationPool,
-        gate_map: &mut HashMap<String, Handle<Box<dyn Operation>>>,
+        gates: &mut Vec<Operation>,
+        gate_map: &mut HashMap<String, &Operation>,
         qubits: &mut Vec<Qubit>,
         clbits: &mut Vec<Clbit>,
     ) -> Vec<CircuitInstruction> {
@@ -37,8 +37,7 @@ impl Parser {
             if let Some(token) = self.next_token() {
                 match token {
                     Token::Identifier(id) if id == "CircuitInstruction" => {
-                        let instruction =
-                            self.parse_circuit_instruction(gates, gate_map, qubits, clbits);
+                        let instruction = self.parse_circuit_instruction(gates, gate_map, qubits, clbits);
                         instructions.push(instruction);
                     }
                     Token::CloseBracket => break,
@@ -51,13 +50,13 @@ impl Parser {
 
     fn parse_circuit_instruction(
         &mut self,
-        gates: &mut OperationPool,
-        gate_map: &mut HashMap<String, Handle<Box<dyn Operation>>>,
+        operations: &mut Vec<Operation>,
+        op_map: &mut HashMap<String, &Operation>,
         qubits: &mut Vec<Qubit>,
         clbits: &mut Vec<Clbit>,
     ) -> CircuitInstruction {
         self.expect_token(Token::OpenParen);
-        let handle = self.parse_operation(gates, gate_map);
+        let operation = self.parse_operation(operations, op_map);
 
         // Maybe no clone in the future? Overhead should be minimal tho
         let parsed_qubits: Vec<Qubit> = self
@@ -84,14 +83,10 @@ impl Parser {
         let qubit_indices = qubits.iter().map(|qubit| qubit.index()).collect();
         let clbit_indices = clbits.iter().map(|clbit| clbit.index()).collect();
 
-        CircuitInstruction::new(handle, qubit_indices, clbit_indices)
+        CircuitInstruction::new(operation, qubit_indices, clbit_indices)
     }
 
-    fn parse_operation(
-        &mut self,
-        gates: &mut OperationPool,
-        gate_map: &mut HashMap<String, Handle<Box<dyn Operation>>>,
-    ) -> Handle<Box<dyn Operation>> {
+    fn parse_operation(&mut self, operations: &mut Vec<Operation>, op_map: &mut HashMap<String, &Operation>) -> &Operation {
         self.expect_token(Token::Identifier("operation".to_string()));
         self.expect_token(Token::Equals);
         self.expect_token(Token::Identifier("Instruction".to_string()));
@@ -100,53 +95,34 @@ impl Parser {
         let name = self.parse_key_value("name", true).unwrap();
 
         // unused... will clean up parsing to ignore stuff like this
-        let _num_qubits: usize = self
-            .parse_key_value("num_qubits", false)
-            .unwrap()
-            .parse()
-            .unwrap();
-        let _num_clbits: usize = self
-            .parse_key_value("num_clbits", false)
-            .unwrap()
-            .parse()
-            .unwrap();
+        self.parse_key_value("num_qubits", false);
+        self.parse_key_value("num_clbits", false);
 
         let params: Vec<f64> = self.parse_params();
 
         self.expect_token(Token::CloseParen);
 
-        let instr = Instruction::new(params, None, Unit::DT);
 
-        // TODO: In the future this should be pull from every struct in gates
-        // and add them to the pool and the map. This is really ugly and should
-        // be fixed. Currently, I'm having an issue coming up with a good
-        // memory efficient way to iterate through all the gates. I was thinking
-        // of using VecAny but it doesn't seem to do exactly what I need (also
-        // there's memory overhead which is whatever but still not ideal). Maybe
-        // there's a way I can just directly pull from the gates module...
-        match name.as_str() {
-            "x" => {
-                let handle = gates.add(&XGate::new(instr));
-                gate_map.insert("x".to_string(), handle);
-                handle
+        if let Some(gate) = op_map.get(&name) {
+            gate.clone()
+        } else {
+            match name.as_str() {
+                "delay" => {
+                    let op = Operation::Delay(Delay::new(0.0));
+                    operations.push(op);
+                    op_map.insert(name.clone(), &op);
+                    &op
+                },
+                _ => {
+                    let op = Operation::Gate(Gate::new(name, params, None, Unit::DT, Array2::zeros((2, 2))));
+                    operations.push(op);
+                    op_map.insert(name.clone(), &op);
+                    &op
+
+                },
             }
-            "y" => {
-                let handle = gates.add(&YGate::new(instr));
-                gate_map.insert("y".to_string(), handle);
-                handle
-            }
-            "z" => {
-                let handle = gates.add(&ZGate::new(instr));
-                gate_map.insert("z".to_string(), handle);
-                handle
-            }
-            "h" => {
-                let handle = gates.add(&HadamardGate::new(instr));
-                gate_map.insert("h".to_string(), handle);
-                handle
-            }
-            _ => panic!("Unexpected gate name: {:?}", name),
         }
+
     }
 
     fn parse_bits(&mut self, group_name: &str) -> Vec<Bit> {

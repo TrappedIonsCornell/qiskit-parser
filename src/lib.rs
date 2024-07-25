@@ -1,6 +1,5 @@
 pub mod circuit_instruction;
-pub mod instruction;
+pub mod operations;
 pub mod bit;
 pub mod gates;
-pub mod quantumcircuit;
-pub mod util;
+pub mod quantum_circuit;
