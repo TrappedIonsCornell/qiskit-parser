@@ -1,6 +1,4 @@
-use std::any::Any;
-
-use crate::{bit::{Clbit, Qubit}, instruction::Operation, util::pool::Handle};
+use crate::{instruction::Operation, util::pool::Handle};
 
 /// Description of a Qiskit Circuit element. Provides a specific operation and the
 /// qubits/classical bits it interacts with.
