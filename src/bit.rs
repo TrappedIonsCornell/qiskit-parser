@@ -26,6 +26,14 @@ pub struct Qubit {
     index: usize,
 }
 
+#[derive(Debug, PartialEq, Hash, Eq, Clone)]
+/// An ancilla quantum bit (i.e. a quantum bit that is not part of the main
+/// register)
+pub struct AncillaQubit {
+    name: String,
+    index: usize,
+}
+
 impl From<Bit> for Qubit {
     fn from(bit: Bit) -> Self {
         match bit {
@@ -51,14 +59,6 @@ impl From<Bit> for AncillaQubit {
             _ => panic!("Cannot convert to AncillaQubit"),
         }
     }
-}
-
-#[derive(Debug, PartialEq, Hash, Eq, Clone)]
-/// An ancilla quantum bit (i.e. a quantum bit that is not part of the main
-/// register)
-pub struct AncillaQubit {
-    name: String,
-    index: usize,
 }
 
 impl BitOps for Qubit {

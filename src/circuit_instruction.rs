@@ -10,7 +10,6 @@ pub struct CircuitInstruction {
 }
 
 impl CircuitInstruction {
-    /// Create a new CircuitInstruction.
     pub fn new(operation: Operation, qubits: Vec<usize>, clbits: Vec<usize>) -> Self {
         Self {
             operation,

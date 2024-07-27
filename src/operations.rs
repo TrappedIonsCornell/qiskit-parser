@@ -8,6 +8,8 @@ pub enum TimeUnit {
     DT,
 }
 
+/// Contains all possible operations that can be applied to a quantum circuit.
+/// This includes gates, delays, barriers, and measurements.
 #[derive(Debug, PartialEq, Clone)]
 pub enum Operation {
     Gate(Gate),
@@ -16,6 +18,7 @@ pub enum Operation {
     Measurement(Measurement),
 }
 
+/// A quantum gate that can be applied to a quantum circuit
 #[derive(Debug, PartialEq, Clone)]
 pub struct Gate {
     name: String,
@@ -51,7 +54,13 @@ pub struct Measurement {
 }
 
 impl Gate {
-    pub fn new(name: String, params: Vec<f64>, duration: Option<f64>, unit: TimeUnit, matrix: Array2<Complex64>) -> Self {
+    pub fn new(
+        name: String,
+        params: Vec<f64>,
+        duration: Option<f64>,
+        unit: TimeUnit,
+        matrix: Array2<Complex64>,
+    ) -> Self {
         Gate {
             name,
             params,
@@ -61,8 +70,15 @@ impl Gate {
         }
     }
 
-    pub fn builder() -> GateBuilder {
+    /// If you want to update a prebuilt gate, utilize this method to update the
+    /// gate and create a GateBuilder initialized with the gate's values.
+    pub fn builder(&self) -> GateBuilder {
         GateBuilder::new()
+            .name(self.name.clone())
+            .params(self.params.clone())
+            .duration(self.duration.unwrap())
+            .unit(self.unit)
+            .matrix(self.matrix.clone())
     }
 
     pub fn name(&self) -> &String {

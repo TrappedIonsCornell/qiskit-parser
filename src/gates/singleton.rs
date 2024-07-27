@@ -1,7 +1,13 @@
 use ndarray::Array2;
 use numpy::Complex64;
 
-use crate::gates::Gate;
+use crate::operations::{Gate, TimeUnit};
+
+macro_rules! call_all_functions {
+    ($($func:ident),*) => {
+        $(pub mod $func;)*
+    };
+}
 
 pub fn hadamard() -> Gate {
     let factor = 1.0 / 2.0_f64.sqrt();
@@ -15,7 +21,7 @@ pub fn hadamard() -> Gate {
         ],
     )
     .unwrap();
-    Gate::new("Hadamard".to_string(), vec![], None, Unit::DT, matrix)
+    Gate::new("Hadamard".to_string(), vec![], None, TimeUnit::DT, matrix)
 }
 
 pub fn x() -> Gate {
@@ -29,7 +35,7 @@ pub fn x() -> Gate {
         ],
     )
     .unwrap();
-    Gate::new("Pauli-X".to_string(), vec![], None, Unit::DT, matrix)
+    Gate::new("Pauli-X".to_string(), vec![], None, TimeUnit::DT, matrix)
 }
 
 pub fn y() -> Gate {
@@ -43,7 +49,7 @@ pub fn y() -> Gate {
         ],
     )
     .unwrap();
-    Gate::new("Pauli-Y".to_string(), vec![], None, Unit::DT, matrix)
+    Gate::new("Pauli-Y".to_string(), vec![], None, TimeUnit::DT, matrix)
 }
 
 pub fn z() -> Gate {
@@ -57,5 +63,5 @@ pub fn z() -> Gate {
         ],
     )
     .unwrap();
-    Gate::new("Pauli-Z".to_string(), vec![], None, Unit::DT, matrix)
+    Gate::new("Pauli-Z".to_string(), vec![], None, TimeUnit::DT, matrix)
 }

@@ -13,6 +13,8 @@ use crate::{
 
 use super::tokenizer::{Token, Tokenizer};
 
+/// Reads in the tokenized Qiskit circuit data and parses it into a QuantumCircuit object.
+/// This should not be instantiated by itself, but rather through the QuantumCircuit::new() method
 pub struct Parser {
     tokens: Vec<Token>,
     pos: usize,

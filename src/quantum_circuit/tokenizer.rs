@@ -1,3 +1,4 @@
+/// Generic Tokens for parsing a Qiskit circuit.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     OpenBracket,
@@ -10,6 +11,8 @@ pub enum Token {
     StringLiteral(String),
     Number(f64),
 }
+
+/// Tokenizer for parsing a Qiskit circuit.
 pub struct Tokenizer {
     input: Vec<char>,
     pos: usize,
