@@ -211,6 +211,18 @@ impl HamiltonianComponent {
         }
     }
 
+    pub fn time_fn(&self) -> &TimeDependentFn {
+        self.time_fn.as_ref().expect("Time function not set")
+    }
+
+    pub fn constant(&self) -> &Complex64 {
+        self.constant.as_ref().expect("Constant not set")
+    }
+
+    pub fn operator(&self) -> &Array2<Complex64> {
+        &self.operator
+    }
+
     pub fn calculate(&self, t: f64) -> Array2<Complex64> {
         let time_fn = self.time_fn.expect("Time function not set");
         let constant = self.constant.expect("Constant not set");
