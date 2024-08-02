@@ -3,6 +3,22 @@ use ndarray::Array2;
 use numpy::Complex64;
 use std::fmt::Debug;
 
+pub type TimeDependentFn = fn(f64) -> Complex64;
+
+/// Parts of a total Hamiltonian for a gate. This breaks up terms to easily
+/// determine commutativity and other properties.
+#[derive(Debug, PartialEq, Clone)]
+pub struct HamiltonianComponent {
+    time_fn: Option<TimeDependentFn>,
+    constant: Option<Complex64>,
+    operator: Array2<Complex64>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Hamiltonian {
+    components: Vec<HamiltonianComponent>,
+}
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TimeUnit {
     DT,
@@ -26,6 +42,7 @@ pub struct Gate {
     duration: Option<f64>,
     unit: TimeUnit,
     matrix: Array2<Complex64>,
+    hamiltonian: Option<Hamiltonian>,
 }
 
 /// GateBuilder enables custom gate creation
@@ -36,6 +53,7 @@ pub struct GateBuilder {
     duration: Option<f64>,
     unit: Option<TimeUnit>,
     matrix: Option<Array2<Complex64>>,
+    hamiltonian: Option<Hamiltonian>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -60,6 +78,7 @@ impl Gate {
         duration: Option<f64>,
         unit: TimeUnit,
         matrix: Array2<Complex64>,
+        hamiltonian: Option<Hamiltonian>,
     ) -> Self {
         Gate {
             name,
@@ -67,6 +86,7 @@ impl Gate {
             duration,
             unit,
             matrix,
+            hamiltonian,
         }
     }
 
@@ -79,6 +99,7 @@ impl Gate {
             .duration(self.duration.unwrap())
             .unit(self.unit)
             .matrix(self.matrix.clone())
+            .hamiltonian(self.hamiltonian.clone().unwrap())
     }
 
     pub fn name(&self) -> &String {
@@ -131,6 +152,7 @@ impl GateBuilder {
             duration: None,
             unit: None,
             matrix: None,
+            hamiltonian: None,
         }
     }
 
@@ -159,6 +181,11 @@ impl GateBuilder {
         self
     }
 
+    fn hamiltonian(mut self, hamiltonian: Hamiltonian) -> Self {
+        self.hamiltonian = Some(hamiltonian);
+        self
+    }
+
     pub fn build(self) -> Gate {
         Gate {
             name: self.name.expect("Gate name not set"),
@@ -166,6 +193,45 @@ impl GateBuilder {
             duration: self.duration,
             unit: self.unit.unwrap(),
             matrix: self.matrix.expect("Gate matrix not set"),
+            hamiltonian: self.hamiltonian,
         }
+    }
+}
+
+impl HamiltonianComponent {
+    pub fn new(
+        time_fn: TimeDependentFn,
+        constant: Complex64,
+        operator: Array2<Complex64>,
+    ) -> Self {
+        HamiltonianComponent {
+            time_fn: Some(time_fn),
+            constant: Some(constant),
+            operator,
+        }
+    }
+
+    pub fn calculate(&self, t: f64) -> Array2<Complex64> {
+        let time_fn = self.time_fn.expect("Time function not set");
+        let constant = self.constant.expect("Constant not set");
+
+        let time_dep = time_fn(t);
+        let operator = self.operator.clone();
+
+        operator * time_dep + constant
+    }
+}
+
+impl Hamiltonian {
+    pub fn new(components: Vec<HamiltonianComponent>) -> Self {
+        Hamiltonian { components }
+    }
+
+    pub fn components(&self) -> &Vec<HamiltonianComponent> {
+        &self.components
+    }
+
+    pub fn is_commutative(&self) -> bool {
+        todo!()
     }
 }

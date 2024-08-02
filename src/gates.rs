@@ -1,9 +1,6 @@
 // use operation_macro::call_all_functions;
 pub mod singleton;
 
-// #[call_all_functions]
-// /// This module contains predefined singleton gates. This may be useful for
-// /// noiseless simulations, or as a starting point for more complex gates.
 // pub mod singleton {
 //     use ndarray::Array2;
 //     use numpy::Complex64;

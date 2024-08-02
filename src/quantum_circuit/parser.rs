@@ -6,12 +6,23 @@ use numpy::Complex64;
 /// TODO: Migrate to a standard parser library instead of a custom one (didn't realized these existed before lol)
 
 use crate::{
-    bit::{AncillaQubit, Bit, BitOps, Clbit, Qubit},
-    circuit_instruction::CircuitInstruction,
-    operations::{Delay, Gate, Operation, TimeUnit},
+    bit::{AncillaQubit, Bit, BitOps, Clbit, Qubit}, circuit_instruction::CircuitInstruction, operations::{Delay, Gate, Operation, TimeUnit}
 };
 
+use crate::gates::singleton as singleton;
+
 use super::tokenizer::{Token, Tokenizer};
+
+macro_rules! insert_gates {
+    ($map:expr, $($gate:ident),*) => {
+        $(
+            $map.insert(
+                singleton::$gate().name().to_string(),
+                singleton::$gate().to_matrix(),
+            );
+        )*
+    };
+}
 
 /// Reads in the tokenized Qiskit circuit data and parses it into a QuantumCircuit object.
 /// This should not be instantiated by itself, but rather through the QuantumCircuit::new() method
@@ -28,61 +39,7 @@ impl Parser {
 
         let mut mtx_map = HashMap::new();
 
-        // Eventually this will pull every function from the gates module
-        mtx_map.insert(
-            "x".to_string(),
-            Array2::from_shape_vec(
-                (2, 2),
-                vec![
-                    Complex64::new(0.0, 0.0),
-                    Complex64::new(1.0, 0.0),
-                    Complex64::new(1.0, 0.0),
-                    Complex64::new(-0.0, 0.0),
-                ],
-            )
-            .unwrap(),
-        );
-        mtx_map.insert(
-            "y".to_string(),
-            Array2::from_shape_vec(
-                (2, 2),
-                vec![
-                    Complex64::new(0.0, 0.0),
-                    Complex64::new(0.0, -1.0),
-                    Complex64::new(0.0, 1.0),
-                    Complex64::new(-0.0, 0.0),
-                ],
-            )
-            .unwrap(),
-        );
-        mtx_map.insert(
-            "z".to_string(),
-            Array2::from_shape_vec(
-                (2, 2),
-                vec![
-                    Complex64::new(1.0, 0.0),
-                    Complex64::new(0.0, 0.0),
-                    Complex64::new(0.0, 0.0),
-                    Complex64::new(-1.0, 0.0),
-                ],
-            )
-            .unwrap(),
-        );
-
-        let hadamard = 1.0 / 2.0_f64.sqrt();
-        mtx_map.insert(
-            "h".to_string(),
-            Array2::from_shape_vec(
-                (2, 2),
-                vec![
-                    Complex64::new(hadamard, 0.0),
-                    Complex64::new(hadamard, 0.0),
-                    Complex64::new(hadamard, 0.0),
-                    Complex64::new(-hadamard, 0.0),
-                ],
-            )
-            .unwrap(),
-        );
+        insert_gates!(mtx_map, hadamard, x, y, z, cx);
 
         Self {
             tokens,
@@ -181,7 +138,7 @@ impl Parser {
                     }
                 };
                 let operation =
-                    Operation::Gate(Gate::new(name.clone(), params, None, TimeUnit::DT, mtx));
+                    Operation::Gate(Gate::new(name.clone(), params, None, TimeUnit::DT, mtx, None));
                 operations.push(operation);
                 operations.last().unwrap().clone()
             }

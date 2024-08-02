@@ -21,7 +21,7 @@ pub fn hadamard() -> Gate {
         ],
     )
     .unwrap();
-    Gate::new("Hadamard".to_string(), vec![], None, TimeUnit::DT, matrix)
+    Gate::new("h".to_string(), vec![], None, TimeUnit::DT, matrix, None)
 }
 
 pub fn x() -> Gate {
@@ -35,7 +35,7 @@ pub fn x() -> Gate {
         ],
     )
     .unwrap();
-    Gate::new("Pauli-X".to_string(), vec![], None, TimeUnit::DT, matrix)
+    Gate::new("x".to_string(), vec![], None, TimeUnit::DT, matrix, None)
 }
 
 pub fn y() -> Gate {
@@ -49,7 +49,7 @@ pub fn y() -> Gate {
         ],
     )
     .unwrap();
-    Gate::new("Pauli-Y".to_string(), vec![], None, TimeUnit::DT, matrix)
+    Gate::new("y".to_string(), vec![], None, TimeUnit::DT, matrix, None)
 }
 
 pub fn z() -> Gate {
@@ -63,5 +63,32 @@ pub fn z() -> Gate {
         ],
     )
     .unwrap();
-    Gate::new("Pauli-Z".to_string(), vec![], None, TimeUnit::DT, matrix)
+    Gate::new("z".to_string(), vec![], None, TimeUnit::DT, matrix, None)
+}
+
+pub fn cx() -> Gate {
+    let matrix = Array2::from_shape_vec(
+        (4, 4),
+        vec![
+            Complex64::new(1.0, 0.0),
+            Complex64::new(0.0, 0.0),
+            Complex64::new(0.0, 0.0),
+            Complex64::new(0.0, 0.0),
+            Complex64::new(0.0, 0.0),
+            Complex64::new(1.0, 0.0),
+            Complex64::new(0.0, 0.0),
+            Complex64::new(0.0, 0.0),
+            Complex64::new(0.0, 0.0),
+            Complex64::new(0.0, 0.0),
+            Complex64::new(0.0, 0.0),
+            Complex64::new(1.0, 0.0),
+            Complex64::new(0.0, 0.0),
+            Complex64::new(0.0, 0.0),
+            Complex64::new(1.0, 0.0),
+            Complex64::new(0.0, 0.0),
+        ],
+    )
+    .unwrap();
+
+    Gate::new("cx".to_string(), vec![], None, TimeUnit::DT, matrix, None)
 }

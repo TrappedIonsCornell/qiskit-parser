@@ -4,38 +4,41 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, ItemMod};
 
-#[proc_macro_attribute]
-pub fn call_all_functions(
-    _attr: TokenStream,
-    item: TokenStream,
-) -> TokenStream {
-    let input = parse_macro_input!(item as ItemMod);
-
+#[proc_macro]
+pub fn generate_insert_gates(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as ItemMod);
     let mod_name = &input.ident;
-    let mut call_statements = Vec::new();
 
-    if let Some((_, ref items)) = input.content {
-        for item in items.iter() {
-            if let syn::Item::Fn(f) = item {
-                let fn_name = &f.sig.ident;
-                call_statements.push(quote! {
-                    #mod_name::#fn_name();
-                });
+    // Extract function names from the module
+    let mut gate_names = Vec::new();
+
+    if let Some((_, items)) = input.content {
+        for item in items {
+            if let syn::Item::Fn(func) = item {
+                let func_name = func.sig.ident.to_string();
+                gate_names.push(func_name);
             }
         }
     }
 
-    let calls = quote! {
-        fn call_all() {
-            #(#call_statements)*
+    // Generate the map insertion code
+    let insertions = gate_names.iter().map(|name| {
+        let ident = syn::Ident::new(name, proc_macro2::Span::call_site());
+        quote! {
+            mtx_map.insert(
+                singleton::#ident().name().to_string(),
+                singleton::#ident().to_matrix(),
+            );
+        }
+    });
+
+    let expanded = quote! {
+        {
+            let mut mtx_map = std::collections::HashMap::new();
+            #(#insertions)*
+            mtx_map
         }
     };
 
-    let code = quote! {
-        #input
-
-        #calls
-    };
-
-    TokenStream::from(code)
+    TokenStream::from(expanded)
 }
