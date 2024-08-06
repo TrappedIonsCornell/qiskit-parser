@@ -1,5 +1,5 @@
 use ndarray::Array2;
-use numpy::Complex64;
+use numpy::Complex64 as c64;
 
 use crate::operations::{Gate, TimeUnit};
 
@@ -14,10 +14,10 @@ pub fn hadamard() -> Gate {
     let matrix = Array2::from_shape_vec(
         (2, 2),
         vec![
-            Complex64::new(factor, 0.0),
-            Complex64::new(factor, 0.0),
-            Complex64::new(factor, 0.0),
-            Complex64::new(-factor, 0.0),
+            c64::new(factor, 0.0),
+            c64::new(factor, 0.0),
+            c64::new(factor, 0.0),
+            c64::new(-factor, 0.0),
         ],
     )
     .unwrap();
@@ -28,10 +28,10 @@ pub fn x() -> Gate {
     let matrix = Array2::from_shape_vec(
         (2, 2),
         vec![
-            Complex64::new(0.0, 0.0),
-            Complex64::new(1.0, 0.0),
-            Complex64::new(1.0, 0.0),
-            Complex64::new(0.0, 0.0),
+            c64::new(0.0, 0.0),
+            c64::new(1.0, 0.0),
+            c64::new(1.0, 0.0),
+            c64::new(0.0, 0.0),
         ],
     )
     .unwrap();
@@ -42,10 +42,10 @@ pub fn y() -> Gate {
     let matrix = Array2::from_shape_vec(
         (2, 2),
         vec![
-            Complex64::new(0.0, 0.0),
-            Complex64::new(0.0, -1.0),
-            Complex64::new(0.0, 1.0),
-            Complex64::new(0.0, 0.0),
+            c64::new(0.0, 0.0),
+            c64::new(0.0, -1.0),
+            c64::new(0.0, 1.0),
+            c64::new(0.0, 0.0),
         ],
     )
     .unwrap();
@@ -56,10 +56,10 @@ pub fn z() -> Gate {
     let matrix = Array2::from_shape_vec(
         (2, 2),
         vec![
-            Complex64::new(1.0, 0.0),
-            Complex64::new(0.0, 0.0),
-            Complex64::new(0.0, 0.0),
-            Complex64::new(-1.0, 0.0),
+            c64::new(1.0, 0.0),
+            c64::new(0.0, 0.0),
+            c64::new(0.0, 0.0),
+            c64::new(-1.0, 0.0),
         ],
     )
     .unwrap();
@@ -70,22 +70,22 @@ pub fn cx() -> Gate {
     let matrix = Array2::from_shape_vec(
         (4, 4),
         vec![
-            Complex64::new(1.0, 0.0),
-            Complex64::new(0.0, 0.0),
-            Complex64::new(0.0, 0.0),
-            Complex64::new(0.0, 0.0),
-            Complex64::new(0.0, 0.0),
-            Complex64::new(1.0, 0.0),
-            Complex64::new(0.0, 0.0),
-            Complex64::new(0.0, 0.0),
-            Complex64::new(0.0, 0.0),
-            Complex64::new(0.0, 0.0),
-            Complex64::new(0.0, 0.0),
-            Complex64::new(1.0, 0.0),
-            Complex64::new(0.0, 0.0),
-            Complex64::new(0.0, 0.0),
-            Complex64::new(1.0, 0.0),
-            Complex64::new(0.0, 0.0),
+            c64::new(1.0, 0.0),
+            c64::new(0.0, 0.0),
+            c64::new(0.0, 0.0),
+            c64::new(0.0, 0.0),
+            c64::new(0.0, 0.0),
+            c64::new(1.0, 0.0),
+            c64::new(0.0, 0.0),
+            c64::new(0.0, 0.0),
+            c64::new(0.0, 0.0),
+            c64::new(0.0, 0.0),
+            c64::new(0.0, 0.0),
+            c64::new(1.0, 0.0),
+            c64::new(0.0, 0.0),
+            c64::new(0.0, 0.0),
+            c64::new(1.0, 0.0),
+            c64::new(0.0, 0.0),
         ],
     )
     .unwrap();

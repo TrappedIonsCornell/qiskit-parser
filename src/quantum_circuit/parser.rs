@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use ndarray::Array2;
-use numpy::Complex64;
+use numpy::Complex64 as c64;
 
 /// TODO: Migrate to a standard parser library instead of a custom one (didn't realized these existed before lol)
 
@@ -29,7 +29,7 @@ macro_rules! insert_gates {
 pub struct Parser {
     tokens: Vec<Token>,
     pos: usize,
-    mtx_map: HashMap<String, Array2<Complex64>>,
+    mtx_map: HashMap<String, Array2<c64>>,
 }
 
 impl Parser {

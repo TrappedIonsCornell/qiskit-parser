@@ -1,17 +1,17 @@
 use ndarray::Array2;
 
-use numpy::Complex64;
+use numpy::Complex64 as c64;
 use std::fmt::Debug;
 
-pub type TimeDependentFn = fn(f64) -> Complex64;
+pub type TimeDependentFn = fn(f64) -> f64;
 
 /// Parts of a total Hamiltonian for a gate. This breaks up terms to easily
 /// determine commutativity and other properties.
 #[derive(Debug, PartialEq, Clone)]
 pub struct HamiltonianComponent {
     time_fn: Option<TimeDependentFn>,
-    constant: Option<Complex64>,
-    operator: Array2<Complex64>,
+    constant: Option<c64>,
+    operator: Array2<c64>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -41,7 +41,7 @@ pub struct Gate {
     params: Vec<f64>,
     duration: Option<f64>,
     unit: TimeUnit,
-    matrix: Array2<Complex64>,
+    matrix: Array2<c64>,
     hamiltonian: Option<Hamiltonian>,
 }
 
@@ -52,7 +52,7 @@ pub struct GateBuilder {
     params: Option<Vec<f64>>,
     duration: Option<f64>,
     unit: Option<TimeUnit>,
-    matrix: Option<Array2<Complex64>>,
+    matrix: Option<Array2<c64>>,
     hamiltonian: Option<Hamiltonian>,
 }
 
@@ -77,7 +77,7 @@ impl Gate {
         params: Vec<f64>,
         duration: Option<f64>,
         unit: TimeUnit,
-        matrix: Array2<Complex64>,
+        matrix: Array2<c64>,
         hamiltonian: Option<Hamiltonian>,
     ) -> Self {
         Gate {
@@ -118,7 +118,7 @@ impl Gate {
         &self.unit
     }
 
-    pub fn to_matrix(&self) -> Array2<Complex64> {
+    pub fn to_matrix(&self) -> Array2<c64> {
         self.matrix.clone()
     }
 }
@@ -176,7 +176,7 @@ impl GateBuilder {
         self
     }
 
-    fn matrix(mut self, matrix: Array2<Complex64>) -> Self {
+    fn matrix(mut self, matrix: Array2<c64>) -> Self {
         self.matrix = Some(matrix);
         self
     }
@@ -201,8 +201,8 @@ impl GateBuilder {
 impl HamiltonianComponent {
     pub fn new(
         time_fn: TimeDependentFn,
-        constant: Complex64,
-        operator: Array2<Complex64>,
+        constant: c64,
+        operator: Array2<c64>,
     ) -> Self {
         HamiltonianComponent {
             time_fn: Some(time_fn),
@@ -215,15 +215,15 @@ impl HamiltonianComponent {
         self.time_fn.as_ref().expect("Time function not set")
     }
 
-    pub fn constant(&self) -> &Complex64 {
+    pub fn constant(&self) -> &c64 {
         self.constant.as_ref().expect("Constant not set")
     }
 
-    pub fn operator(&self) -> &Array2<Complex64> {
+    pub fn operator(&self) -> &Array2<c64> {
         &self.operator
     }
 
-    pub fn calculate(&self, t: f64) -> Array2<Complex64> {
+    pub fn calculate(&self, t: f64) -> Array2<c64> {
         let time_fn = self.time_fn.expect("Time function not set");
         let constant = self.constant.expect("Constant not set");
 
