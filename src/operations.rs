@@ -1,4 +1,4 @@
-use nalgebra::base::Matrix2;
+use nalgebra::base::DMatrix;
 use numpy::Complex64 as c64;
 use std::fmt::Debug;
 
@@ -10,7 +10,7 @@ pub type TimeDependentFn = fn(f64) -> c64;
 pub struct HamiltonianComponent {
     time_fn: Option<TimeDependentFn>,
     constant: Option<c64>,
-    operator: Matrix2<c64>,
+    operator: DMatrix<c64>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -40,7 +40,7 @@ pub struct Gate {
     params: Vec<f64>,
     duration: Option<f64>,
     unit: TimeUnit,
-    matrix: Matrix2<c64>,
+    matrix: DMatrix<c64>,
     hamiltonian: Option<Hamiltonian>,
 }
 
@@ -51,7 +51,7 @@ pub struct GateBuilder {
     params: Option<Vec<f64>>,
     duration: Option<f64>,
     unit: Option<TimeUnit>,
-    matrix: Option<Matrix2<c64>>,
+    matrix: Option<DMatrix<c64>>,
     hamiltonian: Option<Hamiltonian>,
 }
 
@@ -76,7 +76,7 @@ impl Gate {
         params: Vec<f64>,
         duration: Option<f64>,
         unit: TimeUnit,
-        matrix: Matrix2<c64>,
+        matrix: DMatrix<c64>,
         hamiltonian: Option<Hamiltonian>,
     ) -> Self {
         Gate {
@@ -117,7 +117,7 @@ impl Gate {
         &self.unit
     }
 
-    pub fn to_matrix(&self) -> Matrix2<c64> {
+    pub fn to_matrix(&self) -> DMatrix<c64> {
         self.matrix.clone()
     }
 }
@@ -175,7 +175,7 @@ impl GateBuilder {
         self
     }
 
-    fn matrix(mut self, matrix: Matrix2<c64>) -> Self {
+    fn matrix(mut self, matrix: DMatrix<c64>) -> Self {
         self.matrix = Some(matrix);
         self
     }
@@ -201,7 +201,7 @@ impl HamiltonianComponent {
     pub fn new(
         time_fn: TimeDependentFn,
         constant: c64,
-        operator: Matrix2<c64>,
+        operator: DMatrix<c64>,
     ) -> Self {
         HamiltonianComponent {
             time_fn: Some(time_fn),
@@ -218,11 +218,11 @@ impl HamiltonianComponent {
         self.constant.as_ref().expect("Constant not set")
     }
 
-    pub fn operator(&self) -> &Matrix2<c64> {
+    pub fn operator(&self) -> &DMatrix<c64> {
         &self.operator
     }
 
-    pub fn calculate(&self, t: f64) -> Matrix2<c64> {
+    pub fn calculate(&self, t: f64) -> DMatrix<c64> {
         let time_fn = self.time_fn.expect("Time function not set");
         let constant = self.constant.expect("Constant not set");
 

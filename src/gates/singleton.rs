@@ -1,4 +1,4 @@
-use nalgebra::base::Matrix2;
+use nalgebra::base::DMatrix;
 use numpy::Complex64 as c64;
 
 use crate::operations::{Gate, TimeUnit};
@@ -11,7 +11,9 @@ macro_rules! call_all_functions {
 
 pub fn hadamard() -> Gate {
     let factor = 1.0 / 2.0_f64.sqrt();
-    let matrix = Matrix2::from_vec(
+    let matrix = DMatrix::from_vec(
+        2,
+        2,
         vec![
             c64::new(factor, 0.0),
             c64::new(factor, 0.0),
@@ -23,7 +25,9 @@ pub fn hadamard() -> Gate {
 }
 
 pub fn x() -> Gate {
-    let matrix = Matrix2::from_vec(
+    let matrix = DMatrix::from_vec(
+        2,
+        2,
         vec![
             c64::new(0.0, 0.0),
             c64::new(1.0, 0.0),
@@ -35,7 +39,9 @@ pub fn x() -> Gate {
 }
 
 pub fn y() -> Gate {
-    let matrix = Matrix2::from_vec(
+    let matrix = DMatrix::from_vec(
+        2,
+        2,
         vec![
             c64::new(0.0, 0.0),
             c64::new(0.0, -1.0),
@@ -47,7 +53,9 @@ pub fn y() -> Gate {
 }
 
 pub fn z() -> Gate {
-    let matrix = Matrix2::from_vec(
+    let matrix = DMatrix::from_vec(
+        2,
+        2,
         vec![
             c64::new(1.0, 0.0),
             c64::new(0.0, 0.0),
@@ -59,7 +67,9 @@ pub fn z() -> Gate {
 }
 
 pub fn cx() -> Gate {
-    let matrix = Matrix2::from_vec(
+    let matrix = DMatrix::from_vec(
+        4,
+        4,
         vec![
             c64::new(1.0, 0.0),
             c64::new(0.0, 0.0),

@@ -1,15 +1,16 @@
 use std::collections::HashMap;
 
-use nalgebra::base::Matrix2;
+use nalgebra::base::DMatrix;
 use numpy::Complex64 as c64;
 
 /// TODO: Migrate to a standard parser library instead of a custom one (didn't realized these existed before lol)
-
 use crate::{
-    bit::{AncillaQubit, Bit, BitOps, Clbit, Qubit}, circuit_instruction::CircuitInstruction, operations::{Delay, Gate, Operation, TimeUnit}
+    bit::{AncillaQubit, Bit, BitOps, Clbit, Qubit},
+    circuit_instruction::CircuitInstruction,
+    operations::{Delay, Gate, Operation, TimeUnit},
 };
 
-use crate::gates::singleton as singleton;
+use crate::gates::singleton;
 
 use super::tokenizer::{Token, Tokenizer};
 
@@ -29,7 +30,7 @@ macro_rules! insert_gates {
 pub struct Parser {
     tokens: Vec<Token>,
     pos: usize,
-    mtx_map: HashMap<String, Matrix2<c64>>,
+    mtx_map: HashMap<String, DMatrix<c64>>,
 }
 
 impl Parser {
@@ -37,7 +38,7 @@ impl Parser {
         let mut tokenizer = Tokenizer::new(input);
         let tokens = tokenizer.tokenize();
 
-        let mut mtx_map = HashMap::new();
+        let mut mtx_map: HashMap<String, DMatrix<c64>> = HashMap::new();
 
         insert_gates!(mtx_map, hadamard, x, y, z, cx);
 
@@ -132,13 +133,19 @@ impl Parser {
                 let mtx = match self.mtx_map.get(&name) {
                     Some(_) => self.mtx_map.get(&name).unwrap().clone(),
                     None => {
-                        let mtx = Matrix2::zeros();
+                        let mtx = DMatrix::zeros(2, 2);
                         self.mtx_map.insert(name.clone(), mtx.clone());
                         mtx
                     }
                 };
-                let operation =
-                    Operation::Gate(Gate::new(name.clone(), params, None, TimeUnit::DT, mtx, None));
+                let operation = Operation::Gate(Gate::new(
+                    name.clone(),
+                    params,
+                    None,
+                    TimeUnit::DT,
+                    mtx,
+                    None,
+                ));
                 operations.push(operation);
                 operations.last().unwrap().clone()
             }
