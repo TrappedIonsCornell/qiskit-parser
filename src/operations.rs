@@ -1,6 +1,6 @@
 use nalgebra::base::DMatrix;
-use numpy::Complex64 as c64;
 use std::fmt::Debug;
+use crate::c64;
 
 pub type TimeDependentFn = fn(f64) -> c64;
 
@@ -138,7 +138,7 @@ impl Delay {
 }
 
 impl Operation {
-    pub fn id(&self) -> i64 {
+    pub fn id(&self) -> u8 {
         0
     }
 }
@@ -155,32 +155,32 @@ impl GateBuilder {
         }
     }
 
-    fn name(mut self, name: String) -> Self {
+    pub fn name(mut self, name: String) -> Self {
         self.name = Some(name);
         self
     }
 
-    fn params(mut self, params: Vec<f64>) -> Self {
+    pub fn params(mut self, params: Vec<f64>) -> Self {
         self.params = Some(params);
         self
     }
 
-    fn duration(mut self, duration: f64) -> Self {
+    pub fn duration(mut self, duration: f64) -> Self {
         self.duration = Some(duration);
         self
     }
 
-    fn unit(mut self, unit: TimeUnit) -> Self {
+    pub fn unit(mut self, unit: TimeUnit) -> Self {
         self.unit = Some(unit);
         self
     }
 
-    fn matrix(mut self, matrix: DMatrix<c64>) -> Self {
+    pub fn matrix(mut self, matrix: DMatrix<c64>) -> Self {
         self.matrix = Some(matrix);
         self
     }
 
-    fn hamiltonian(mut self, hamiltonian: Hamiltonian) -> Self {
+    pub fn hamiltonian(mut self, hamiltonian: Hamiltonian) -> Self {
         self.hamiltonian = Some(hamiltonian);
         self
     }

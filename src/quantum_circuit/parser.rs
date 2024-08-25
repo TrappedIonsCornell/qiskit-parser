@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use nalgebra::base::DMatrix;
-use numpy::Complex64 as c64;
+use crate::c64;
 
 /// TODO: Migrate to a standard parser library instead of a custom one (didn't realized these existed before lol)
 use crate::{

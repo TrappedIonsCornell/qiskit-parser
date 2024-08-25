@@ -1,5 +1,5 @@
 use nalgebra::base::DMatrix;
-use numpy::Complex64 as c64;
+use crate::c64;
 
 use crate::operations::{Gate, TimeUnit};
 
