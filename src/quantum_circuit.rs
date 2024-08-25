@@ -39,6 +39,10 @@ impl QuantumCircuit {
         &self.instr
     }
 
+    pub fn instructions_mut(&mut self) -> &mut Vec<CircuitInstruction> {
+        &mut self.instr
+    }
+
     /// Get the qubit objects for the circuit.
     pub fn qubits(&self) -> &Vec<Qubit> {
         &self.qubits
