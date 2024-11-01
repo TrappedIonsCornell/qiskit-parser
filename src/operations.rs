@@ -127,6 +127,10 @@ impl Gate {
     pub fn to_matrix(&self) -> DMatrix<c64> {
         self.matrix.clone()
     }
+
+    pub fn hamiltonian(&self) -> Option<Hamiltonian> {
+        self.hamiltonian.clone()
+    }
 }
 
 impl From<Operation> for Gate {
