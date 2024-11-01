@@ -1,6 +1,9 @@
-use nalgebra::base::DMatrix;
-use std::fmt::Debug;
 use crate::c64;
+use nalgebra::base::DMatrix;
+use std::{
+    fmt::Debug,
+    hash::{DefaultHasher, Hash, Hasher},
+};
 
 pub type TimeDependentFn = fn(f64) -> c64;
 
@@ -95,10 +98,14 @@ impl Gate {
         GateBuilder::new()
             .name(self.name.clone())
             .params(self.params.clone())
-            .duration(self.duration.unwrap())
+            .duration(self.duration.unwrap_or(0.0))
             .unit(self.unit)
             .matrix(self.matrix.clone())
-            .hamiltonian(self.hamiltonian.clone().unwrap())
+            .hamiltonian(
+                self.hamiltonian
+                    .clone()
+                    .unwrap_or(Hamiltonian { components: vec![] }),
+            )
     }
 
     pub fn name(&self) -> &String {
@@ -138,8 +145,26 @@ impl Delay {
 }
 
 impl Operation {
-    pub fn id(&self) -> u8 {
-        0
+    /// The ID is a unique identifier for a gate.
+    /// We only hash the name and parameters because they're the minimal
+    /// requirements for unique hashing
+    pub fn id(&self) -> u32 {
+        match self {
+            Operation::Gate(gate) => {
+                let mut hasher = DefaultHasher::new();
+                gate.name.hash(&mut hasher);
+                let a = hasher.finish();
+                let b = gate.params().iter().fold(0, |acc, x| {
+                    let mut hasher = DefaultHasher::new();
+                    x.to_bits().hash(&mut hasher);
+                    let c = hasher.finish();
+                    acc ^ c
+                });
+
+                a as u32 ^ b as u32
+            }
+            _ => 0,
+        }
     }
 }
 
@@ -198,11 +223,7 @@ impl GateBuilder {
 }
 
 impl HamiltonianComponent {
-    pub fn new(
-        time_fn: TimeDependentFn,
-        constant: c64,
-        operator: DMatrix<c64>,
-    ) -> Self {
+    pub fn new(time_fn: TimeDependentFn, constant: c64, operator: DMatrix<c64>) -> Self {
         HamiltonianComponent {
             time_fn: Some(time_fn),
             constant: Some(constant),
