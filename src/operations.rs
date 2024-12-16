@@ -16,7 +16,7 @@ pub struct HamiltonianComponent {
     operator: DMatrix<c64>,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq, Clone)]
 pub struct Hamiltonian {
     components: Vec<HamiltonianComponent>,
 }
@@ -269,5 +269,46 @@ impl Hamiltonian {
 
     pub fn is_commutative(&self) -> bool {
         todo!()
+    }
+}
+
+impl Debug for Hamiltonian {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Hamiltonian [\n")?;
+        for comp in &self.components {
+            let matrix = &comp.operator;
+            let nrows = matrix.nrows();
+            let ncols = matrix.ncols();
+            
+            let constant = comp.constant.unwrap_or(c64::new(0.0, 0.0));
+            let const_str = if constant.im == 0.0 {
+                format!("{:6.2}", constant.re)
+            } else if constant.re == 0.0 {
+                format!("{:6.2}i", constant.im)
+            } else {
+                format!("{:6.2}{:+.2}i", constant.re, constant.im)
+            };
+            
+            writeln!(f, "time_fn *{} *", const_str)?;
+            
+            // Write matrix
+            for i in 0..nrows {
+                write!(f, "  [")?;
+                for j in 0..ncols {
+                    let val = matrix[(i, j)];
+                    if j > 0 { write!(f, ", ")?; }
+                    if val.im == 0.0 {
+                        write!(f, "{:6.2}", val.re)?;
+                    } else if val.re == 0.0 {
+                        write!(f, "{:6.2}i", val.im)?;
+                    } else {
+                        write!(f, "{:6.2}{:+.2}i", val.re, val.im)?;
+                    }
+                }
+                writeln!(f, "]")?;
+            }
+            writeln!(f)?;
+        }
+        write!(f, "]")
     }
 }
